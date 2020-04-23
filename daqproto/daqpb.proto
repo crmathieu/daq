@@ -1,0 +1,54 @@
+syntax = "proto3";
+package daqproto;
+
+import "google/protobuf/timestamp.proto";
+
+// option go_package = "./protofiles";
+option go_package = "../daqproto";
+
+// protoc --proto_path=src --go_out=build/gen --go_opt=paths=source_relative src/foo.proto src/bar/baz.proto
+// use command "protoc --proto_path=. --go_out=. daqpb.proto" to compile this ".proto" file into a ".pb.go" file
+
+// following defines a packet message which can contain 4 types of data points:
+// - Velocity
+// - Coordinates
+// - Turbopump Rate per minute
+// - Engine pressure
+
+message Packet {
+
+//    enum DataPointID {
+//        VELOCITY = 0;
+//        COORDINATES = 1;
+//        TPRATE = 2;
+//        ENGPRESSURE = 3;
+//    }
+    uint32 DataPointID = 1;
+    oneof DataPoint {
+        DPvelocity      velocity = 2;
+        DPcoordinate    coordinate = 3;
+        DPTurboPumpRMP  turboPumpRMP = 4;
+        DPEnginePRE     enginePressure = 5;
+    }
+
+    message DPvelocity {
+        float velx = 1;
+        float vely = 2;
+        float velz = 3;
+    }
+
+    message DPcoordinate {
+        float coorx = 1;
+        float coory = 2;
+        float coorz = 3;
+    }
+    
+    message DPTurboPumpRMP {
+        float rpm = 1;
+    }
+
+    message DPEnginePRE {
+        float pressure = 1;
+    }
+
+}
