@@ -6,8 +6,9 @@ import "google/protobuf/timestamp.proto";
 // option go_package = "./protofiles";
 option go_package = "../daqproto";
 
-// protoc --proto_path=src --go_out=build/gen --go_opt=paths=source_relative src/foo.proto src/bar/baz.proto
-// use command "protoc --proto_path=. --go_out=. daqpb.proto" to compile this ".proto" file into a ".pb.go" file
+// How to use protoc (the protocol buffer compiler):
+// $ protoc --proto_path=src --go_out=build/gen --go_opt=paths=source_relative src/foo.proto src/bar/baz.proto
+// use command "$ protoc --proto_path=. --go_out=. daqpb.proto" to compile this ".proto" file into a ".pb.go" file
 
 // following defines a packet message which can contain 4 types of data points:
 // - Velocity
@@ -16,7 +17,6 @@ option go_package = "../daqproto";
 // - Engine pressure
 
 message Packet {
-
 //    enum DataPointID {
 //        VELOCITY = 0;
 //        COORDINATES = 1;

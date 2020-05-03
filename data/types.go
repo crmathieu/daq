@@ -32,36 +32,54 @@ const DATAPOINT_SIZE = 14
 //type GSbuf []byte
 
 const(
- 	PVELOCITY = 0 
-    PCOORDINATES = 1
-    PTURBOPUMP = 2
-    PENGINEPRE = 3
+	// instruments offset in sensors map
+ 	SVELOCITY = 0 
+    SPOSITION = 1
+    STURBOPUMP = 2
+	SENGINEPRE = 3
+	SMASSPROPELLANT = 4
+
+	INSTRUMENTS_COUNT = SMASSPROPELLANT + 1
+
+	// Rocket constants
+	//DRYWEIGHT = 15000
+	//MAXVOL_OXYDIZER = 100000
+	//MAXVOL_PROPELLANT = 200000
+	
+	DOWNLINK_PORT = ":2000"
 )   
 
+
 // each dp is 14 bytes long
-type Pvelocity struct {
-	Id   uint16
-	Velx float32
-    Vely float32
-    Velz float32
+type SENSvelocity struct {
+	Id    	 		uint16
+	Velocity 		float32
+	Acceleration 	float32
+	Reserved 		[4]byte
 }
 
-type Pcoordinates struct {
-	Id    uint16
-	Coorx float32
-    Coory float32
-    Coorz float32
+type SENSposition struct {
+	Id    		uint16
+	Range 		float32
+    Inclinaison float32
+    Altitude 	float32
 }
 
-type PturboPumpRPM struct {
+type SENSturboPump struct {
 	Id   uint16
 	Rpm  int32
 	Reserved [8]byte
 }
 
-type PenginePressure struct {
+type SENSenginePressure struct {
 	Id   	 uint16
 	Pressure float32
+	Reserved [8]byte
+}
+
+type SENSpropellantMass struct {
+	Id   	 uint16
+	Mass   	 float32
 	Reserved [8]byte
 }
 

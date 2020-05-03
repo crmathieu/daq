@@ -34,7 +34,7 @@ func handle(c net.Conn) {
     c.Close()
 }
 
-var UARTregister map[byte]*data.GSbuf
+//var UARTregister map[byte]*data.GSbuf
 
 func main() {
 
@@ -43,7 +43,7 @@ func main() {
 	UARTregister[16] = &data.GSbuf{0, [data.PACKET_PAYLOAD_LENGTH]byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},0,0} //, false} // DP2
 	UARTregister[32] = &data.GSbuf{0, [data.PACKET_PAYLOAD_LENGTH]byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},0,0} //, false} //DP3
 */
-    srv, err := net.Listen("tcp", ":2000")
+    srv, err := net.Listen("tcp", data.DOWNLINK_PORT)
     if err != nil {
         log.Fatal(err)
     }

@@ -117,7 +117,7 @@ var tag = 0
 func downlink() {
 	defer wg.Done()
 	//var tag int
-	wg.Add(1)
+	wg.Add(1)	
 	ticker := time.Tick(1 * time.Second)
 	for {
 

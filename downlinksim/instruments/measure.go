@@ -1,53 +1,58 @@
-//package measurements
-package main 
+package instruments
 import (
 	"github.com/crmathieu/daq/data"
 	"unsafe"
 	"fmt"
 	"net"
-	"context"
+//	"context"
 	"time"
 )
 
 // instruments read
+/*
 func readVelocity() interface{} {	
-	return (*(*data.Pvelocity)(SensorsMap[data.PVELOCITY].Data))
+	return (*(*data.IVelocitySensor)(SensorsMap[data.PVELOCITY].Data))
 }
 func readCoordinates() interface{} {
-	return (*(*data.Pcoordinates)(SensorsMap[data.PCOORDINATES].Data))
+	return (*(*data.IRangeSensor)(SensorsMap[data.PRANGE].Data))
 }
 func readTurboPumpRPM() interface{}  {
-	return (*(*data.PturboPumpRPM)(SensorsMap[data.PTURBOPUMP].Data))
+	return (*(*data.IturboPumpSensor)(SensorsMap[data.PTURBOPUMP].Data))
 }
 func readEnginePressure() interface{}  {
-	return (*(*data.PenginePressure)(SensorsMap[data.PENGINEPRE].Data))
-}
+	return (*(*data.INSTenginePressureSensor)(SensorsMap[data.PENGINEPRE].Data))
+}*/
 
+/*
 
 func init() {
 	SensorsMap = map[uint8]DataPoint{
 		data.PVELOCITY: 	DataPoint{	Data: (unsafe.Pointer)(&VelocitySensor), 		
-								Length: unsafe.Sizeof(data.Pvelocity{}), 		
+								Length: unsafe.Sizeof(data.INSTVelocitySensor{}), 		
 								SensorUpdate: setVelocity,
 								ReadSensor: readVelocity},
-		data.PCOORDINATES: 	DataPoint{	Data: (unsafe.Pointer)(&CoordinatesSensor), 		
-								Length: unsafe.Sizeof(data.Pcoordinates{}), 
+		data.PRANGE: 	DataPoint{	Data: (unsafe.Pointer)(&CoordinatesSensor), 		
+								Length: unsafe.Sizeof(data.INSTRangeSensor{}), 
 								SensorUpdate: setCoordinates,
 								ReadSensor: readCoordinates},
 		data.PTURBOPUMP: 	DataPoint{	Data: (unsafe.Pointer)(&TurboPumpRPMSensor), 	
-								Length: unsafe.Sizeof(data.PturboPumpRPM{}), 
+								Length: unsafe.Sizeof(data.INSTturboPumpSensor{}), 
 								SensorUpdate: setTurboPumpRPM,								
 								ReadSensor: readTurboPumpRPM},
 		data.PENGINEPRE: 	DataPoint{	Data: (unsafe.Pointer)(&EnginePressureSensor), 	
-								Length: unsafe.Sizeof(data.PenginePressure{}), 
+								Length: unsafe.Sizeof(data.INSTenginePressureSensor{}), 
 								SensorUpdate: setEnginePressure,			
 								ReadSensor: readEnginePressure},
 	}
-	sensorIndexList = []uint8{data.PVELOCITY, data.PCOORDINATES, data.PTURBOPUMP, data.PENGINEPRE}
+	sensorIndexList = []uint8{data.PVELOCITY, data.PRANGE, data.PTURBOPUMP, data.PENGINEPRE}
 }
-
+*/
+/*
 func main() {
-    conn, err := net.Dial("tcp", ":2000")
+//	ctx, cancel := context.WithTimeout(context.Background(), 10000 * time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
+
+    conn, err := net.Dial("tcp", data.DOWNLINK_PORT)
     if err != nil {
 		fmt.Println(err)
 		return
@@ -56,6 +61,7 @@ func main() {
 
 	StreamData(conn)
 }
+*/
 
 // ReadInstruments ------------------------------------------------------------
 // this is called as a goroutine to perform updates
@@ -92,9 +98,7 @@ func ReadInstruments(pOut []byte, capacity, index int) (byte, int, int) {
 func StreamData(c net.Conn) {
 
 	var packet = [data.PACKET_LENGTH]byte {data.PACKET_START}
-//	ctx, cancel := context.WithTimeout(context.Background(), 10000 * time.Millisecond)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	defer c.Close()
 
 	//start := time.Now()
     //totalBytes := 0
@@ -103,7 +107,7 @@ func StreamData(c net.Conn) {
 	var sensorInd, size = 0, 0
 	for {
 		select {
-			case <-ctx.Done(): c.Close(); fmt.Println("Ctrl-C entered..."); return
+			//case <-ctx.Done(): c.Close(); fmt.Println("Ctrl-C entered..."); return
 			default: ndp, size, sensorInd = ReadInstruments(packet[data.PACKET_PAYLOAD_OFFSET:], data.PACKET_PAYLOAD_LENGTH, sensorInd)
 					 setPacket(&packet, ndp, size)
 					 writePacket(c, (*[data.PACKET_LENGTH]byte)(unsafe.Pointer(&packet)))
@@ -115,7 +119,7 @@ func StreamData(c net.Conn) {
 // writes a packet to an established connection
 // ----------------------------------------------------------------------------
 func writePacket(c net.Conn, pk *[data.PACKET_LENGTH]byte) (int, error) {
-//	fmt.Println("------>", (*pk))
+	fmt.Println("------>", (*pk))
     return c.Write((*pk)[:data.PACKET_LENGTH])   
 }
 
