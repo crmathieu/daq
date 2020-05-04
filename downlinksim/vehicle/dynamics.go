@@ -71,48 +71,8 @@ const (
 	RHO = 1.225	
 	H0 = 7500
 )
-var vdot, mdot, m, v, F, D, beta, betadot, xrange, hrange float32
-
-
-var zvelocity = float32(0.2)
-var altitude = float32(1.1)
-var tbrpm = int32(15000)
-var engpressure = float32(150.56)
-var propmass = float32(F9_S1_PropellantMass)
-
-// placeholder instruments updates
-func (v *VEHICLE) setPosition() {
-	/*altitude++
-	(*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Altitude = altitude*/
-}
-func (v *VEHICLE) setTurboPumpRPM() {
-	tbrpm++
-	(*(*data.SENSturboPump)(v.Stage[v.CurrentStage].Instruments[data.STURBOPUMP])).Rpm = tbrpm
-}
-func (v *VEHICLE) setEnginePressure() {
-	engpressure++
-	(*(*data.SENSenginePressure)(v.Stage[v.CurrentStage].Instruments[data.SENGINEPRE])).Pressure = engpressure
-}
-func (v *VEHICLE) setPropellantMass() {
-	/*propmass--
-	(*(*data.SENSpropellantMass)(v.Stage[v.CurrentStage].Instruments[data.SMASSPROPELLANT])).Mass = propmass*/
-}
 
 var UPDATE_TICK = 1000 * time.Millisecond
-
-// RunInstrumentsUpdate -------------------------------------------------------
-// calls the SetSensor function defined in the datapoint structure in an
-// infinite loop, only interrupted by a sleep function
-// ----------------------------------------------------------------------------
-func (v *VEHICLE) RunInstrumentsUpdate() {
-	for {
-		time.Sleep(UPDATE_TICK)
-		for _, i := range v.Stage[v.CurrentStage].Handlers {
-			i.SetSensor()
-			//fmt.Println(k, "--->", v.ReadSensor())
-		}
-	}
-}
 
 func (v *VEHICLE) launch() {
 	var meco = false
@@ -249,8 +209,6 @@ func (v *VEHICLE) updateGravityTurn() {
 // ----------------------------------------------------------------------------  
 func (v *VEHICLE) setDrag() {
 	v.Drag = 0.5 * v.Rho * v.FrontalArea * CD * math.Pow(v.Velocity, 2)
-//	v.Drag = 0.5 * v.Rho * v.FrontalArea * CD * math.Pow(float64((*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY])).Velocity),2)
-//	fmt.Println("--",rho,"--",v.FrontalArea,"--",CD,"--",(*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY])).Velocity,"--",v.Drag)
 }
 
 // steps to calculate parameters value after t+dt:
@@ -260,57 +218,6 @@ func (v *VEHICLE) setDrag() {
 // 4) calculate altitude
 // 4) update ISA parameters
 const DELTAt = 1 //0.1   // in seconds
-
-func (v *VEHICLE) setVelocity() {
-
-	fmt.Println(v.Clock, "-->",(v.Velocity)*3.6, "k/h -- ", "Alt:",v.Altitude/1000,	"km, Downrange:", (*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Range/1000,"km, Gamma=",v.Gamma)
-	if v.Clock < 2.0 {
-		v.setMass(DELTAt)
-//		fmt.Println(v.Clock, "-->",0, "k/h -- ", "Alt:",v.Altitude,	"Downrange:", v.Range)
-		v.Clock = v.Clock + DELTAt
-		return
-	}
-	v.updateGravityTurn()
-	/*
-	v.setDrag()
-	v.Stage[v.CurrentStage].PropellantMass = v.Stage[v.CurrentStage].PropellantMass - (v.getMdot() * DELTAt)
-	m := float64(v.Stage[v.CurrentStage].PropellantMass + v.Stage[v.CurrentStage].DryMass) 
-	V := float64((*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY])).Velocity)
-	
-	// apply: dv/dt = (T - D)/m - g.sin(gamma)
-	vdot := ((float64(v.Stage[v.CurrentStage].Thrust) - v.Drag)/ m) - v.G * math.Sin(deg2rad(v.Gamma))
-	if vdot < 0 {
-		vdot = 0
-	}
-	// apply: dx/dt = v.cos(gamma).r0/(r0+h)
-// 	xdot := (V+vdot) * math.Sin(v.Gamma) * DELTAt
- 	xdot := (V+vdot) * math.Cos(deg2rad(v.Gamma)) * (EARTHRADIUS/(EARTHRADIUS+float64((*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Altitude)))
-	// apply: dh/dt = v.sin(gamma)	
-//	hdot := (V+vdot) * math.Cos(v.Gamma) * DELTAt
-	hdot := (V+vdot) * math.Sin(deg2rad(v.Gamma))
-
-	(*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY])).Velocity = float32(V + vdot)
-
-	//v.setPolarDot()
-	v.setGammaDot()
-	//v.PolarAngle = v.PolarAngle + v.polarDot
-	v.Gamma = v.Gamma + v.gammaDot
-	//fmt.Println("gamma=",v.Gamma)
-
-	(*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Altitude = 
-	(*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Altitude + float32(hdot)
-
-	(*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Range = 
-	(*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Range + float32(xdot)
-	*/
-//	fmt.Println(v.Drag)
-//	v.Stage[v.CurrentStage].PropellantMass = v.Stage[v.CurrentStage].PropellantMass - (v.getMdot() * DELTAt)
-	v.Clock = v.Clock + DELTAt
-	if v.Gamma == 90 && v.Clock > 5.0  {
-		v.Gamma = v.Gamma - 5
-		fmt.Println("NEW GAMMA:",v.Gamma)
-	}
-}
 
 func deg2rad(degre float64) float64 {
 	return math.Pi * degre / 180
@@ -329,6 +236,7 @@ var rad = 180/ math.Pi
 //var totalBurnTime = 0
 const TOTAL_SEGMENTS = 20
 const TARGET_ORBIT = 350000
+
 func liftoff (v *VEHICLE) {
 	v.G = GRAVITY_ACC
 	v.Gamma = 89.85 * deg
@@ -365,8 +273,9 @@ func liftoff (v *VEHICLE) {
 //				calculate time left: T = delta/vn
 //				calculate dgamma = gamma/T
 
+const THROTTLE_VALUE = 0.8
+
 func(v *VEHICLE) setRates(mecoStatus bool) bool {
-	const THROTTLE_VALUE = 0.8
 	var m float32
 	var meco = false
 	m_dot := v.Stage[v.CurrentStage].M_dot * THROTTLE_VALUE

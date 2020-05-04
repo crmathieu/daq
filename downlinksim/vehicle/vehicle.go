@@ -3,18 +3,9 @@ import (
 	"github.com/crmathieu/daq/data"
 	"unsafe"
 )
-/*
-type DataPoint struct {
-    Data    		unsafe.Pointer //*interface{}
-	Length  		uintptr
-	SetSensor 	func (*VEHICLE)()
-	ReadSensor 		func (*VEHICLE)() //interface{}
-}
-*/
 
 type SensorHandlers struct {
-	ReadSensor 	func () interface{}
-	SetSensor 	func ()
+	ReadSensor 	func () [data.DATAPOINT_SIZE]byte
 }
 
 type rocketStage struct {
@@ -69,15 +60,19 @@ func NewVehicle() *VEHICLE {
 
 	v.Stage[0].Instruments[data.SVELOCITY]		= (unsafe.Pointer)(&data.SENSvelocity{		Id:data.SVELOCITY, 	Velocity:0.0, Acceleration:0.0,})
 	v.Stage[0].Instruments[data.SPOSITION]		= (unsafe.Pointer)(&data.SENSposition{		Id:data.SPOSITION, 	Range:0.0,    Inclinaison:0.0, Altitude:0.0,})
-	v.Stage[0].Instruments[data.STURBOPUMP]		= (unsafe.Pointer)(&data.SENSturboPump{		Id:data.STURBOPUMP, Rpm:0,})
-	v.Stage[0].Instruments[data.SENGINEPRE]		= (unsafe.Pointer)(&data.SENSenginePressure{Id:data.SENGINEPRE, Pressure:0.0,})
-	v.Stage[0].Instruments[data.SMASSPROPELLANT]= (unsafe.Pointer)(&data.SENSpropellantMass{Id:data.SMASSPROPELLANT, Mass: F9_S1_PropellantMass,})
+//	v.Stage[0].Instruments[data.STURBOPUMP]		= (unsafe.Pointer)(&data.SENSturboPump{		Id:data.STURBOPUMP, Rpm:0,})
+//	v.Stage[0].Instruments[data.SENGINEPRE]		= (unsafe.Pointer)(&data.SENSenginePressure{Id:data.SENGINEPRE, Pressure:0.0,})
+	v.Stage[0].Instruments[data.STILTANGLE]		= (unsafe.Pointer)(&data.SENStiltAngle{		Id:data.STILTANGLE, Angle:0,})
+	v.Stage[0].Instruments[data.STHRUST]		= (unsafe.Pointer)(&data.SENSthrust{		Id:data.STHRUST, Thrust:0,})
+	v.Stage[0].Instruments[data.SMASSPROPELLANT]= (unsafe.Pointer)(&data.SENSpropellantMass{Id:data.SMASSPROPELLANT, Mflow: 0.0, Mass: F9_S1_PropellantMass,})
 
-	v.Stage[0].Handlers[data.SVELOCITY]			= SensorHandlers{ReadSensor: v.readVelocity, 		SetSensor: v.setVelocity,}
-	v.Stage[0].Handlers[data.SPOSITION]			= SensorHandlers{ReadSensor: v.readPosition, 		SetSensor: v.setPosition,}
-	v.Stage[0].Handlers[data.STURBOPUMP]		= SensorHandlers{ReadSensor: v.readTurboPumpRPM,	SetSensor: v.setTurboPumpRPM,}
-	v.Stage[0].Handlers[data.SENGINEPRE]		= SensorHandlers{ReadSensor: v.readEnginePressure, 	SetSensor:v.setEnginePressure,}
-	v.Stage[0].Handlers[data.SMASSPROPELLANT]	= SensorHandlers{ReadSensor: v.readPropellantMass, 	SetSensor: v.setPropellantMass,}
+	v.Stage[0].Handlers[data.SVELOCITY]			= SensorHandlers{ReadSensor: v.readVelocity,}
+	v.Stage[0].Handlers[data.SPOSITION]			= SensorHandlers{ReadSensor: v.readPosition, }
+//	v.Stage[0].Handlers[data.STURBOPUMP]		= SensorHandlers{ReadSensor: v.readTurboPumpRPM,}
+//	v.Stage[0].Handlers[data.SENGINEPRE]		= SensorHandlers{ReadSensor: v.readEnginePressure,}
+	v.Stage[0].Handlers[data.STILTANGLE]		= SensorHandlers{ReadSensor: v.readTiltAngle,}
+	v.Stage[0].Handlers[data.STHRUST]			= SensorHandlers{ReadSensor: v.readThrust,}
+	v.Stage[0].Handlers[data.SMASSPROPELLANT]	= SensorHandlers{ReadSensor: v.readPropellantMass, }
 	
 	// stage-2
 	v.Stage[1].Diameter 		= F9_S2_DIAMETER
@@ -92,15 +87,19 @@ func NewVehicle() *VEHICLE {
 	
 	v.Stage[1].Instruments[data.SVELOCITY]		= (unsafe.Pointer)(&data.SENSvelocity{		Id:data.SVELOCITY, 	Velocity:0.0, Acceleration:0.0,})
 	v.Stage[1].Instruments[data.SPOSITION]		= (unsafe.Pointer)(&data.SENSposition{		Id:data.SPOSITION, 	Range:0.0, 	  Inclinaison:0.0, Altitude:0.0,})
-	v.Stage[1].Instruments[data.STURBOPUMP]		= (unsafe.Pointer)(&data.SENSturboPump{		Id:data.STURBOPUMP, Rpm:0,})
-	v.Stage[1].Instruments[data.SENGINEPRE]		= (unsafe.Pointer)(&data.SENSenginePressure{Id:data.SENGINEPRE, Pressure:0.0,})
+//	v.Stage[1].Instruments[data.STURBOPUMP]		= (unsafe.Pointer)(&data.SENSturboPump{		Id:data.STURBOPUMP, Rpm:0,})
+//	v.Stage[1].Instruments[data.SENGINEPRE]		= (unsafe.Pointer)(&data.SENSenginePressure{Id:data.SENGINEPRE, Pressure:0.0,})
+	v.Stage[1].Instruments[data.STILTANGLE]		= (unsafe.Pointer)(&data.SENStiltAngle{		Id:data.STILTANGLE, Angle:0,})
+	v.Stage[1].Instruments[data.STHRUST]		= (unsafe.Pointer)(&data.SENSthrust{		Id:data.STHRUST, Thrust:0,})
 	v.Stage[1].Instruments[data.SMASSPROPELLANT]= (unsafe.Pointer)(&data.SENSpropellantMass{Id:data.SMASSPROPELLANT, Mass: F9_S2_PropellantMass,})
 
-	v.Stage[1].Handlers[data.SVELOCITY]			= SensorHandlers{ReadSensor: v.readVelocity, 		SetSensor: 	v.setVelocity,}
-	v.Stage[1].Handlers[data.SPOSITION]			= SensorHandlers{ReadSensor: v.readPosition, 		SetSensor: 	v.setPosition,}
-	v.Stage[1].Handlers[data.STURBOPUMP]		= SensorHandlers{ReadSensor: v.readTurboPumpRPM,	SetSensor: 	v.setTurboPumpRPM,}
-	v.Stage[1].Handlers[data.SENGINEPRE]		= SensorHandlers{ReadSensor: v.readEnginePressure, 	SetSensor:	v.setEnginePressure,}
-	v.Stage[1].Handlers[data.SMASSPROPELLANT]	= SensorHandlers{ReadSensor: v.readPropellantMass, 	SetSensor: 	v.setPropellantMass,}
+	v.Stage[1].Handlers[data.SVELOCITY]			= SensorHandlers{ReadSensor: v.readVelocity, }
+	v.Stage[1].Handlers[data.SPOSITION]			= SensorHandlers{ReadSensor: v.readPosition, }
+//	v.Stage[1].Handlers[data.STURBOPUMP]		= SensorHandlers{ReadSensor: v.readTurboPumpRPM,}
+//	v.Stage[1].Handlers[data.SENGINEPRE]		= SensorHandlers{ReadSensor: v.readEnginePressure,}
+	v.Stage[1].Handlers[data.STILTANGLE]		= SensorHandlers{ReadSensor: v.readTiltAngle, }
+	v.Stage[1].Handlers[data.STHRUST]			= SensorHandlers{ReadSensor: v.readThrust,}
+	v.Stage[1].Handlers[data.SMASSPROPELLANT]	= SensorHandlers{ReadSensor: v.readPropellantMass,}
 
 	v.setFrontalArea()
 	return v
@@ -108,15 +107,8 @@ func NewVehicle() *VEHICLE {
 
 func (v *VEHICLE) Meco() {
 	if v.CurrentStage < v.TotalStages - 1 {
-		v.Stage[v.CurrentStage+1].Instruments[data.SVELOCITY] 		= v.Stage[v.CurrentStage].Instruments[data.SVELOCITY]
+		v.Stage[v.CurrentStage+1].Instruments[data.SVELOCITY] 	= v.Stage[v.CurrentStage].Instruments[data.SVELOCITY]
 		v.Stage[v.CurrentStage+1].Instruments[data.SPOSITION] 	= v.Stage[v.CurrentStage].Instruments[data.SPOSITION]
 		v.CurrentStage++
 	}
 }
-/*
-type SENSORUPDATE interface {
-	func (v *VEHICLE) setTurboPumpRPM() 	interface{}
-	func (v *VEHICLE) setEnginePressure() 	interface{}
-	func (v *VEHICLE) setVelocity() 		interface{}
-	func (v *VEHICLE) setPosition() 		interface{} 
-}*/

@@ -5,7 +5,9 @@ import (
     "log"
     "net"
 	"time"
-    "github.com/crmathieu/daq/data"
+	"github.com/crmathieu/daq/data"
+	"unsafe"
+	"fmt"
 )
 
 func handle(c net.Conn) {
@@ -34,15 +36,67 @@ func handle(c net.Conn) {
     c.Close()
 }
 
+func readPackets(c net.Conn) {
+    // Handle the reads
+    start := time.Now()
+    tbuf := make([]byte, 81920)
+    totalBytes := 0
+
+    for {
+		n, err := c.Read(tbuf)
+		
+		/*if n > 81920 {
+			log.Printf("BUFFER OVERFLOW %d bytes read in %s", totalBytes, time.Now().Sub(start))
+			c.Close()
+		}*/
+
+		//log.Println(tbuf[:n])
+		detectPacketFrame(&tbuf, n)
+		totalBytes += n
+//		if n != 256 {
+//			log.Println(n)
+//		}
+        // Was there an error in reading ?
+        if err != nil {
+            if err != io.EOF {
+                log.Printf("Read error: %s", err)
+            }
+            break
+        }
+        //log.Println(n)
+    }
+    log.Printf("%d bytes read in %s", totalBytes, time.Now().Sub(start))
+    c.Close()
+}
+
+func detectPacketFrame(pk *[]byte, size int) {
+	numberDP := *(*byte)(unsafe.Pointer(&(*pk)[data.PACKET_NDP_OFFSET]))
+//	fmt.Println(numberDP)
+	//dp := (*[]data.SENSgeneric)(unsafe.Pointer(&(*pk)[data.PACKET_PAYLOAD_OFFSET]))
+	//dp := (*[]data.SENSgeneric)(unsafe.Pointer(&(*pk)[data.PACKET_PAYLOAD_OFFSET]))
+
+	for k:=byte(0); k<numberDP; k++ {
+		dp := (*data.SENSgeneric)(unsafe.Pointer(&(*pk)[data.PACKET_PAYLOAD_OFFSET+k*data.DATAPOINT_SIZE]))
+		switch(dp.Id) {
+/*		case data.SVELOCITY: 	v := (*data.SENSvelocity)(unsafe.Pointer(dp))
+								fmt.Println("Vel:",v.Velocity,"m/s, Acc:", v.Acceleration)
+		case data.SPOSITION:	v := (*data.SENSposition)(unsafe.Pointer(dp))
+								fmt.Println("Alt:", v.Altitude,"m, Range:", v.Range,"m")
+		case data.STHRUST:		v := (*data.SENSthrust)(unsafe.Pointer(dp))
+								fmt.Println("Thrust:", v.Thrust/1000,"kN, Stage:", v.Stage)
+		case data.STILTANGLE:	v := (*data.SENStiltAngle)(unsafe.Pointer(dp))
+								fmt.Println("Gamma:", v.Angle,"deg")*/
+		case data.SMASSPROPELLANT:	v := (*data.SENSpropellantMass)(unsafe.Pointer(dp))
+								fmt.Println("Mass:", v.Mass,"kg, Mass Flow:", v.Mflow, "kg/s, Mass Ejected:", v.Mejected)
+
+		}
+	}
+}
+
 //var UARTregister map[byte]*data.GSbuf
 
 func main() {
 
-/*	UARTregister = make(map[byte]*data.GSbuf)
-	UARTregister[8]  = &data.GSbuf{0, [data.PACKET_PAYLOAD_LENGTH]byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},0,0} //, false} //DP1
-	UARTregister[16] = &data.GSbuf{0, [data.PACKET_PAYLOAD_LENGTH]byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},0,0} //, false} // DP2
-	UARTregister[32] = &data.GSbuf{0, [data.PACKET_PAYLOAD_LENGTH]byte{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},0,0} //, false} //DP3
-*/
     srv, err := net.Listen("tcp", data.DOWNLINK_PORT)
     if err != nil {
         log.Fatal(err)
@@ -53,7 +107,7 @@ func main() {
         if err != nil {
             log.Fatal(err)
         }
-        go handle(conn)
+        go readPackets(conn)
     }
 }
 

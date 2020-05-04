@@ -1,20 +1,5 @@
 package data
 
-// header is 16 bytes 
-const PACKET_PAYLOAD_LENGTH = 32 //255
-const PACKET_LENGTH = PACKET_PAYLOAD_LENGTH + PACKET_PAYLOAD_OFFSET
-const PACKET_START = byte(0xff)
-
-// packet offsets
-const PACKET_START_OFFSET = 0		// start marker
-const PACKET_CRC_OFFSET = 2			// CRC is 32bits and calculated on payload only
-const PACKET_NDP_OFFSET = 6			// number of datapoints in this packet
-const PACKET_TT_OFFSET = 7			// timestamp is on 64bits
-const PACKET_RES_OFFSET = 15		// 1 reserved bytes
-const PACKET_PAYLOAD_OFFSET = 16	// payload starts here (15 dp per payload)
-
-const PACKET_HEADER = 16
-const DATAPOINT_SIZE = 14
 
 /*type GSbuf struct {
 	Marker byte
@@ -33,11 +18,13 @@ const DATAPOINT_SIZE = 14
 
 const(
 	// instruments offset in sensors map
- 	SVELOCITY = 0 
-    SPOSITION = 1
-    STURBOPUMP = 2
-	SENGINEPRE = 3
-	SMASSPROPELLANT = 4
+ 	SVELOCITY = uint16(0) 
+    SPOSITION = uint16(1)
+//    STURBOPUMP = 2
+//	SENGINEPRE = 3
+	STILTANGLE = uint16(2)
+	STHRUST = uint16(3)
+	SMASSPROPELLANT = uint16(4)
 
 	INSTRUMENTS_COUNT = SMASSPROPELLANT + 1
 
@@ -50,37 +37,60 @@ const(
 )   
 
 
-// each dp is 14 bytes long
+
+// each dp is 16 bytes long
 type SENSvelocity struct {
 	Id    	 		uint16
 	Velocity 		float32
 	Acceleration 	float32
-	Reserved 		[4]byte
+	Reserved 		[6]byte
 }
 
 type SENSposition struct {
 	Id    		uint16
 	Range 		float32
-    Inclinaison float32
     Altitude 	float32
+	Inclinaison float32
+	reserved	[2]byte
+}
+
+type SENStiltAngle struct {
+	Id   uint16
+	Angle  float32
+	RateOfChange float32
+	Reserved [10]byte
+}
+
+type SENSthrust struct {
+	Id   	uint16
+	Thrust  float32
+	Stage   int8
+	Reserved [9]byte
 }
 
 type SENSturboPump struct {
 	Id   uint16
 	Rpm  int32
-	Reserved [8]byte
+	Reserved [10]byte
 }
 
 type SENSenginePressure struct {
 	Id   	 uint16
 	Pressure float32
-	Reserved [8]byte
+	Reserved [10]byte
 }
 
 type SENSpropellantMass struct {
 	Id   	 uint16
 	Mass   	 float32
-	Reserved [8]byte
+	Mejected float32
+	Mflow	 float32
+	reserved [2]byte
+}
+
+type SENSgeneric struct {
+	Id    	 		uint16
+	Reserved 		[14]byte
 }
 
 type Pempty []byte
