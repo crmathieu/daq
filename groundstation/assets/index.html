@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>DAQ Streaming</title>
+  <!-- link href="https://fonts.googleapis.com/css?family=Ubuntu:400,700" rel="stylesheet" -->
+  <link rel="stylesheet" href="/css/main.css">
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <!-- script async src="https://www.googletagmanager.com/gtag/js?id=UA-109828050-2"></script -->
+  <!-- script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-109828050-2');
+  </script -->
+</head>
+
+<body>
+
+  <!-- audio id="audio">
+    <source src="/media/success.wav" type="audio/wav">
+    Sorry! Your browser does not support the audio element.
+  </audio -->
+
+  <div id="error_message">
+    <p>{{.Error}}</p>
+  </div>
+  
+  <canvas id="DAQcanvas" width="502" height="108"></canvas>
+
+  <!-- div id="gift">
+    <div class="gift__item">
+      <img id="gift_img" src="" alt="gift">
+    </div>
+    <div class="gift__text">
+      <strong id="inner_text"></strong> sent <span id="gift_amount"></span> <span class="gawkbox">with <span>GawkBox</span></span>
+    </div>
+  </div -->
+  <div id="plotContainer"></div>
+
+  <script type="text/javascript">
+    const errMessage = document.getElementById("error_message");
+    //const audio = document.getElementById("audio");
+    //const gift = document.getElementById("gift_img");
+    //const giftText = document.getElementById("inner_text");
+    //const giftAmount = document.getElementById("gift_amount");
+    const uid = document.getElementById("uid");
+    //const giftDuration = 10000;
+    //const giftDelay = 1000;
+
+    var timerId = 0;
+    var restartId = 0;
+    var timeout = 60000;
+    var restartTO = 75000;
+    var isConnOpen = false;
+    var websockURL = "{{.SocketType}}://{{.Host}}/ws/{{.LaunchToken}}";
+    /*var websockURL = "ws://localhost:1969/ws/plot"*/
+
+    function keepAlive(ws) {
+        if (ws.readyState == ws.OPEN) {
+            ws.send('_keepalive_');
+        }
+        timerId = setTimeout(keepAlive, timeout, ws);
+    }
+    function cancelKeepAlive() {
+      if (timerId) {
+          clearTimeout(timerId);
+      }
+    }
+    function restartConnection() {
+      if (!isConnOpen) {
+        console.log('Reconnecting WebSocket...');
+        start(websockURL)
+        restartId = setTimeout(restartConnection, restartTO);
+      } else {
+        if (restartId) {
+          clearTimeout(restartId)
+        }
+      }
+    }
+
+    function start(websocketServerAddr) {
+      // first let the user know if there has been an issue on the backend
+      if (!{{.Error}}) {
+        errMessage.innerHTML = {{.Error}};
+      }
+
+      conn = new WebSocket(websocketServerAddr);
+
+      //-----------------------------------------------------------------------
+      conn.onopen = function(evt) {
+        isConnOpen = true
+        console.log('%c {{.LaunchToken}} \n IS LIVE!',
+          'font-weight: bold; font-size: 50px;color: red; text-shadow: 3px 3px 0 rgb(217,31,38) , 6px 6px 0 rgb(226,91,14) , 9px 9px 0 rgb(245,221,8) , 12px 12px 0 rgb(5,148,68) , 15px 15px 0 rgb(2,135,206) , 18px 18px 0 rgb(4,77,145) , 21px 21px 0 rgb(42,21,113)'
+        );
+        conn.send({{.LaunchToken}});
+        timerId = setTimeout(keepAlive, timeout, conn);
+      };
+
+      //---------------------------------------------WebSocket--------------------------
+      conn.onmessage = function(evt) {
+        var jsonData = JSON.parse(evt.data)
+        console.log(evt.data);
+        //giftText.innerHTML = jsonData.username;
+        var num = parseFloat(jsonData.gifts[0].amount);
+        //giftAmount.innerHTML = num.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+        //gift.src = jsonData.gifts[0].asset;
+        clearTimeout(timerId);
+        timerId = setTimeout(keepAlive, timeout, conn);
+
+        // delay animation
+/*        setTimeout(() => {
+          document.getElementById('gift').classList.add('show');
+          if ({{.SoundOn}} === "1") {
+            audio.volume = ({{.NotifVol}}/100).toFixed(1);
+            audio.play();
+          }
+        }, giftDelay);
+
+        // hide animation
+        setTimeout(() => {
+          document.getElementById('gift').classList.add('hide');
+        }, giftDuration);
+
+        // remove current gift
+        setTimeout(() => {
+          document.getElementById('gift').classList.remove('hide');
+          document.getElementById('gift').classList.remove('show');
+        }, giftDelay + giftDuration);
+*/
+      };
+
+      //-----------------------------------------------------------------------
+      conn.onclose = function(evt) {
+        isConnOpen = false;
+        cancelKeepAlive()
+        if (evt.code === 1006) {
+          // 1006 is abnormal disconnect - Try to reconnect in 2 seconds
+          //restartId = setTimeout(restartConnection, 1000);
+          start(websockURL)
+        }
+      };
+    }
+
+    // start websocket connection
+    start(websockURL);
+
+  </script>
+</body>
+</html>

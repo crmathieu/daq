@@ -33,7 +33,7 @@ const(
 	//MAXVOL_OXYDIZER = 100000
 	//MAXVOL_PROPELLANT = 200000
 	
-	DOWNLINK_PORT = ":2000"
+	DOWNLINK_SERVER = "localhost:2000"
 )   
 
 
@@ -94,3 +94,15 @@ type SENSgeneric struct {
 }
 
 type Pempty []byte
+
+type CONFinfo struct {
+//		DB 				  *sql.DB
+//		DB_dsn     		  string `yaml:"db_dsn"`	
+		REDIS_dsn  		  string `yaml:"redis_dsn"`	
+		RedisHost  string `yaml:"cache-redis-host"`
+		RedisPort  string `yaml:"cache-redis-port"`
+		RedisPass  string `yaml:"cache-redis-pass"`
+		RedisValid bool
+}
+
+var CInfo CONFinfo 

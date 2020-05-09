@@ -1,0 +1,138 @@
+html, body {}
+
+:root {
+  --font-size: 40px;
+  --image-size: 200px;
+  --duration: 0.5s;
+  --duration-half: 0.3s;
+  --duration-double: 1s;
+  --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --gawk-size: 25px;
+}
+
+#gift {
+  font-family: 'Ubuntu', sans-serif;
+  font-size: var(--font-size);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  transform-origin: center center;
+}
+
+#gift {
+  opacity: 0;
+  transition: opacity var(--duration) var(--ease-out);
+}
+
+#gift.show {
+  opacity: 1;
+  transition: opacity var(--duration) var(--ease-out);
+}
+
+#gift.hide {
+  animation: giftRemove var(--duration) var(--ease-out) forwards;
+}
+
+.gift__item, .gift__text {
+  opacity: 0;
+  position: relative;
+  transition: all var(--duration) var(--ease-out);
+}
+
+.gift__item {
+  width: var(--image-size);
+  height: auto;
+  z-index: 1;
+  transform: scale(0.01);
+}
+
+#gift.show .gift__item {
+  animation: giftItem var(--duration) var(--ease-out) forwards;
+}
+
+.gift__text {
+  z-index: 0;
+  margin-left: 0.25em;
+  transform: translateX(-100%);
+  text-shadow: -0.25px -0.25px 0 rgba(0,0,0,0.85),
+    0.25px -0.25px 0 rgba(0,0,0,0.85),
+    -0.25px 0.25px 0 rgba(0,0,0,0.85),
+    0.25px 0.25px 0 rgba(0,0,0,0.85),
+    1px 2px 0 rgba(0,0,0,0.85),
+    2px 3px 0 rgba(0,0,0,0.85);
+  -webkit-text-stroke: 0.25px black;
+  color: white;
+}
+
+#gift.show .gift__text {
+  animation: giftText var(--duration-double) var(--ease-out) forwards var(--duration-half);
+}
+
+@keyframes giftItem {
+  0% {
+    opacity: 0;
+    transform: scale(0.01);
+    transform-origin: center center;
+  }
+  75% {
+    transform: scale(0.9);
+  }
+  50%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes giftText {
+  0% {
+    opacity: 0;
+    transform: translate3d(-3000px, 0, 0);
+  }
+  40% {
+    opacity: 0;
+  }
+  60% {
+    transform: translate3d(25px, 0, 0);
+  }
+  75% {
+    transform: translate3d(-10px, 0, 0);
+  }
+  90% {
+    transform: translate3d(5px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes giftRemove {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.01);
+  }
+}
+
+.gift__item img {
+  width: 100%;
+}
+
+.gift__text strong {
+  font-weight: 700;
+}
+
+.gift__text .gawkbox {
+  font-size: var(--gawk-size);
+  display: block; 
+}
+
+.gift__text .gawkbox span {
+  color: #45c0b6; 
+}
