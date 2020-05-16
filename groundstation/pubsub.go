@@ -4,11 +4,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/crmathieu/daq/data"
-//	"gopkg.in/yaml.v2"
-//	"io/ioutil"
 	"os"
-//	"path"
-//	"runtime"
 	"time"
 	"strings"
 	b64 "encoding/base64"
@@ -56,23 +52,11 @@ func InitConfig() bool {
 		fmt.Printf("Fatal: environment variable DAQ_ENV not found...")
 		return false
 	}
-/*
-	if dbenv, ok = os.LookupEnv("DAQ_DB_DSN_"+env); ok {
-		dec, _ := b64.StdEncoding.DecodeString(dbenv)
-		data.Config.DB_dsn = string(dec)
-	} else {
-		fmt.Printf("Fatal: environment variable DAQ_DB_DSN_"+env+" not found...")
-		return false
-	}
-*/	
+
 	if redisenv, ok = os.LookupEnv("DAQ_REDIS_DSN_"+env); ok {
 		dec, _ := b64.StdEncoding.DecodeString(redisenv)
 		data.CInfo.REDIS_dsn = string(dec)
 		params := strings.Split(data.CInfo.REDIS_dsn, ":")
-/*		data.Config.Cache_Redis_host = params[0]
-		data.Config.Cache_Redis_port = params[1]
-		data.Config.Cache_Redis_pass = params[2]
-*/
 		data.CInfo.RedisHost = params[0]
 		data.CInfo.RedisPort = params[1]
 		data.CInfo.RedisPass = params[2]
@@ -83,14 +67,6 @@ func InitConfig() bool {
 		fmt.Printf("Fatal: environment variable DAQ_REDIS_DSN_"+env+" not found...")
 	}
 	return RedisInit()
-
-/*	fmt.Println("\nInitializing DB...")
-	data.Config.DB = psql.DBinit(data.Config.DB_dsn)
-	if data.Config.DB == nil {
-		fmt.Println(data.Config)
-		return false
-	}
-*/
 }
 
 

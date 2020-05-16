@@ -14,9 +14,10 @@
     gtag('js', new Date());
     gtag('config', 'UA-109828050-2');
   </script -->
+  <script async type="text/javascript" src="../js/trajectory.js"></script>
 </head>
 
-<body>
+<body onload="draw();">
 
   <!-- audio id="audio">
     <source src="/media/success.wav" type="audio/wav">
@@ -27,7 +28,23 @@
     <p>{{.Error}}</p>
   </div>
   
-  <canvas id="DAQcanvas" width="502" height="108"></canvas>
+  <div style="width:200px;display:inline-block;">
+    Velocity: <div id="Velocity"></div>
+    Accelera:<div id="Acceleration"></div>
+    Range: <div id="Range"></div>
+    Altitude: <div id="Altitude"></div>
+    Inclination: <div id="Inclination"></div>
+    Angle: <div id="Angle"></div>
+    ROC: <div id="RateOfChange"></div>
+    Mass <div id="Mass"></div>
+    Mass depleted: <div id="Mejected"></div>
+    Mass Flow: <div id="Mflow"></div>
+    X: <div id="X"></div>
+    Y: <div id="Y"></div>
+</div>
+<div style="display:inline-block;">
+  <canvas id="DAQcanvas" width="1000" height="550"></canvas>
+</div>
 
   <!-- div id="gift">
     <div class="gift__item">
@@ -54,15 +71,25 @@
     var timeout = 60000;
     var restartTO = 75000;
     var isConnOpen = false;
-    var websockURL = "{{.SocketType}}://{{.Host}}/ws/{{.LaunchToken}}";
+    var websockURL = "{{.SocketType}}://{{.Host}}/ws/{{.ClientToken}}";
+    var bigEndian = isBigEndian()
+    var iterations = 0;
+
     /*var websockURL = "ws://localhost:1969/ws/plot"*/
 
+    function isBigEndian() {
+        const array = new Uint8Array(4);
+        const view = new Uint32Array(array.buffer);
+        return !((view[0] = 1) & array[0]);
+    }
+  
     function keepAlive(ws) {
         if (ws.readyState == ws.OPEN) {
             ws.send('_keepalive_');
         }
         timerId = setTimeout(keepAlive, timeout, ws);
     }
+
     function cancelKeepAlive() {
       if (timerId) {
           clearTimeout(timerId);
@@ -87,19 +114,101 @@
       }
 
       conn = new WebSocket(websocketServerAddr);
+      conn.binaryType = 'arraybuffer';
 
       //-----------------------------------------------------------------------
       conn.onopen = function(evt) {
         isConnOpen = true
-        console.log('%c {{.LaunchToken}} \n IS LIVE!',
+        console.log('%c {{.ClientToken}} \n IS LIVE!',
           'font-weight: bold; font-size: 50px;color: red; text-shadow: 3px 3px 0 rgb(217,31,38) , 6px 6px 0 rgb(226,91,14) , 9px 9px 0 rgb(245,221,8) , 12px 12px 0 rgb(5,148,68) , 15px 15px 0 rgb(2,135,206) , 18px 18px 0 rgb(4,77,145) , 21px 21px 0 rgb(42,21,113)'
         );
-        conn.send({{.LaunchToken}});
+        conn.send({{.ClientToken}});
         timerId = setTimeout(keepAlive, timeout, conn);
       };
 
       //---------------------------------------------WebSocket--------------------------
+        conn.onmessagebis = function (evt) {
+          //let buffer = new ArrayBuffer(evt.data.length);
+          //let dataView = new DataView(evt.data)
+          let idView = new Uint16Array(evt.data, 0, 1);
+          switch (idView[0]) {
+          //let littleEndian = !bigEndian
+          //var packetType = dataView.getUint16(0, littleEndian)
+          //switch (packetType) {
+            case 1: // velocity
+              //let velocityView = new Float32Array(evt.data, 2, 2);
+              let velView = new Float32Array(evt.data, 4, 2);
+              
+              document.getElementById("Velocity").innerHTML = String(velView[0]); //velocityView[0];
+              document.getElementById("Acceleration").innerHTML = String(velView[1]); //velocityView[1];
+              console.log(evt.data);
+              break;
+          }
+
+          //var jsonData = JSON.parse(evt.data)
+          //        console.log(evt.data);
+          //giftText.innerHTML = jsonData.username;
+          //        var num = parseFloat(jsonData.gifts[0].amount);
+          //giftAmount.innerHTML = num.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+          //gift.src = jsonData.gifts[0].asset;
+          //        clearTimeout(timerId);
+          //      timerId = setTimeout(keepAlive, timeout, conn);
+
+        };
+
       conn.onmessage = function(evt) {
+        //let buffer = new ArrayBuffer(evt.data.length);
+        let dataView = new DataView(evt.data)
+        //let idView = new Uint16Array(evt.data, 0, 1);
+        //switch (idView[0]) {
+        let littleEndian = !bigEndian 
+        var packetType = dataView.getUint32(0, littleEndian)
+        switch(packetType) {
+          case 1: // velocity
+              //let velocityView = new Float32Array(evt.data, 2, 2);
+              document.getElementById("Velocity").innerHTML = dataView.getFloat32(4, littleEndian).toString(); //velocityView[0];
+              document.getElementById("Acceleration").innerHTML = dataView.getFloat32(8, littleEndian).toString(); //velocityView[1];
+              console.log(evt.data);
+              break;
+
+
+
+ 
+          case 2: // position
+            //let positionView = new Float32Array(evt.data, 2, 3);
+            document.getElementById("Range").innerHTML = dataView.getFloat32(4, littleEndian); //positionView[0];
+            document.getElementById("Altitude").innerHTML = dataView.getFloat32(8, littleEndian); //positionView[1];
+            document.getElementById("Inclination").innerHTML = dataView.getFloat32(12, littleEndian); //positionView[2];
+            plot(ctx, axes, "rgb(11,153,11)", 1, iterations++, dataView.getFloat32(4, littleEndian), dataView.getFloat32(8, littleEndian));
+            break;
+          case 3: // tilt angle
+            //let tiltAngleView = new Float32Array(evt.data, 2, 2);
+            document.getElementById("Angle").innerHTML = dataView.getFloat32(4, littleEndian); //tiltAngleView[0];
+            document.getElementById("RateOfChange").innerHTML = dataView.getFloat32(8, littleEndian); //tiltAngleView[1];
+            break;
+          case 5: // mass propellant
+            //let propellantView = new Float32Array(evt.data, 2, 3);
+            document.getElementById("Mass").innerHTML = dataView.getFloat32(4, littleEndian); //propellantView[0];
+            document.getElementById("Mejected").innerHTML = dataView.getFloat32(8, littleEndian); //propellantView[1];
+            document.getElementById("Mflow").innerHTML = dataView.getFloat32(12, littleEndian); //propellantView[2];
+            break;
+          default: // ignore for now
+           // let thrustView = new Float32Array(evt.data, 2, 1);
+           // let stageView = new Uint8Array(evt.data, 6, 1);
+        }
+
+        //var jsonData = JSON.parse(evt.data)
+//        console.log(evt.data);
+        //giftText.innerHTML = jsonData.username;
+//        var num = parseFloat(jsonData.gifts[0].amount);
+        //giftAmount.innerHTML = num.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+        //gift.src = jsonData.gifts[0].asset;
+//        clearTimeout(timerId);
+  //      timerId = setTimeout(keepAlive, timeout, conn);
+
+      };
+
+      conn.onmessage2 = function (evt) {
         var jsonData = JSON.parse(evt.data)
         console.log(evt.data);
         //giftText.innerHTML = jsonData.username;
@@ -110,26 +219,27 @@
         timerId = setTimeout(keepAlive, timeout, conn);
 
         // delay animation
-/*        setTimeout(() => {
-          document.getElementById('gift').classList.add('show');
-          if ({{.SoundOn}} === "1") {
-            audio.volume = ({{.NotifVol}}/100).toFixed(1);
-            audio.play();
-          }
-        }, giftDelay);
-
-        // hide animation
-        setTimeout(() => {
-          document.getElementById('gift').classList.add('hide');
-        }, giftDuration);
-
-        // remove current gift
-        setTimeout(() => {
-          document.getElementById('gift').classList.remove('hide');
-          document.getElementById('gift').classList.remove('show');
-        }, giftDelay + giftDuration);
-*/
+        /*        setTimeout(() => {
+                  document.getElementById('gift').classList.add('show');
+                  if ({{.SoundOn}} === "1") {
+                    audio.volume = ({{.NotifVol}}/100).toFixed(1);
+                    audio.play();
+                  }
+                }, giftDelay);
+        
+                // hide animation
+                setTimeout(() => {
+                  document.getElementById('gift').classList.add('hide');
+                }, giftDuration);
+        
+                // remove current gift
+                setTimeout(() => {
+                  document.getElementById('gift').classList.remove('hide');
+                  document.getElementById('gift').classList.remove('show');
+                }, giftDelay + giftDuration);
+        */
       };
+      
 
       //-----------------------------------------------------------------------
       conn.onclose = function(evt) {
@@ -149,3 +259,19 @@
   </script>
 </body>
 </html>
+<!-- 
+  struct someStruct {
+  unsigned long id;
+  char username[16];
+  float amountDue;
+};
+You can access a buffer containing data in this format like this:
+
+let buffer = new ArrayBuffer(24);
+
+// ... read the data into the buffer ...
+
+let idView = new Uint32Array(buffer, 0, 1);
+let usernameView = new Uint8Array(buffer, 4, 16);
+let amountDueView = new Float32Array(buffer, 20, 1);
+-->

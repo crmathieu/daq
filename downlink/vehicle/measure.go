@@ -8,37 +8,29 @@ import (
 	"time"
 )
 
-// instruments read
-/*func (v *VEHICLE) readEnginePressure() interface{}  {
-	//return (*(*data.SENSenginePressure)(v.Stage[v.CurrentStage].Sensors.EnginePressureSensor[data.SENGINEPRE].Data))
-	//return v.Stage[v.CurrentStage].Instruments[data.SENGINEPRE].(data.SENSenginePressure)
-	return (*(*data.SENSenginePressure)(v.Stage[v.CurrentStage].Instruments[data.SENGINEPRE]))
-}*/
-
-
 func (v *VEHICLE) readTiltAngle() [data.DATAPOINT_SIZE]byte {	//interface{}  {
-	p := (*data.SENStiltAngle)(v.Stage[v.CurrentStage].Instruments[data.STILTANGLE])
+	p := (*data.SENStiltAngle)(v.Stage[v.CurrentStage].Instruments[data.STILTANGLE_OFFSET])
 	p.Angle = float32(v.Gamma * rad)
 	p.RateOfChange = float32(v.gamma_dot)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
 
 func (v *VEHICLE) readThrust() [data.DATAPOINT_SIZE]byte {	//interface{}  {
-	p := (*data.SENSthrust)(v.Stage[v.CurrentStage].Instruments[data.STHRUST])
+	p := (*data.SENSthrust)(v.Stage[v.CurrentStage].Instruments[data.STHRUST_OFFSET])
 	p.Thrust = float32(v.Stage[v.CurrentStage].Thrust)
 	p.Stage = v.CurrentStage + 1
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
 
 func (v *VEHICLE) readVelocity() [data.DATAPOINT_SIZE]byte {	//interface{}  {
-	p := (*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY])
+	p := (*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY_OFFSET])
 	p.Velocity = float32(v.Velocity)
 	p.Acceleration = float32(1.0)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
 
 func (v *VEHICLE) readPosition() [data.DATAPOINT_SIZE]byte {	//interface{}  {
-	p := (*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])
+	p := (*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION_OFFSET])
 	p.Range = float32(v.Range)
 	p.Altitude = float32(v.Altitude)
 	p.Inclinaison = float32(0.0)
@@ -46,7 +38,7 @@ func (v *VEHICLE) readPosition() [data.DATAPOINT_SIZE]byte {	//interface{}  {
 }
 
 func (v *VEHICLE) readPropellantMass() [data.DATAPOINT_SIZE]byte {	//interface{}  {
-	p := (*data.SENSpropellantMass)(v.Stage[v.CurrentStage].Instruments[data.SMASSPROPELLANT])
+	p := (*data.SENSpropellantMass)(v.Stage[v.CurrentStage].Instruments[data.SMASSPROPELLANT_OFFSET])
 	p.Mflow = v.Stage[v.CurrentStage].M_dot * THROTTLE_VALUE
 	p.Mass = v.Stage[v.CurrentStage].PropellantMass + v.Stage[v.CurrentStage].DryMass - p.Mflow * (v.Clock - v.ClockAtMeco)
 	p.Mejected = p.Mflow * v.Clock

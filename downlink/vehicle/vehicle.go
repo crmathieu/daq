@@ -29,8 +29,8 @@ type VEHICLE struct {
 	FrontalArea float64
 	Gamma, gamma_dot float64
 	Drag, G, Rho float64
-	TotalStages			int8
-	CurrentStage		int8
+	TotalStages			int32 //int8
+	CurrentStage		int32 //int8
 	AltitudeTarget, TicksPerSegment, TotalBurnTime, VerticalTicks float64
 	EarlyTiltAngle, LateTiltAngle float64
 	TargetAltitude, OrbitalVelocity float64
@@ -58,21 +58,21 @@ func NewVehicle() *VEHICLE {
 	v.Stage[0].Instruments		= make([]unsafe.Pointer, data.INSTRUMENTS_COUNT)
 	v.Stage[0].Handlers			= make([]SensorHandlers, data.INSTRUMENTS_COUNT)
 
-	v.Stage[0].Instruments[data.SVELOCITY]		= (unsafe.Pointer)(&data.SENSvelocity{		Id:data.SVELOCITY, 	Velocity:0.0, Acceleration:0.0,})
-	v.Stage[0].Instruments[data.SPOSITION]		= (unsafe.Pointer)(&data.SENSposition{		Id:data.SPOSITION, 	Range:0.0,    Inclinaison:0.0, Altitude:0.0,})
-//	v.Stage[0].Instruments[data.STURBOPUMP]		= (unsafe.Pointer)(&data.SENSturboPump{		Id:data.STURBOPUMP, Rpm:0,})
-//	v.Stage[0].Instruments[data.SENGINEPRE]		= (unsafe.Pointer)(&data.SENSenginePressure{Id:data.SENGINEPRE, Pressure:0.0,})
-	v.Stage[0].Instruments[data.STILTANGLE]		= (unsafe.Pointer)(&data.SENStiltAngle{		Id:data.STILTANGLE, Angle:0,})
-	v.Stage[0].Instruments[data.STHRUST]		= (unsafe.Pointer)(&data.SENSthrust{		Id:data.STHRUST, Thrust:0,})
-	v.Stage[0].Instruments[data.SMASSPROPELLANT]= (unsafe.Pointer)(&data.SENSpropellantMass{Id:data.SMASSPROPELLANT, Mflow: 0.0, Mass: F9_S1_PropellantMass,})
+	v.Stage[0].Instruments[data.SVELOCITY_OFFSET]		= (unsafe.Pointer)(&data.SENSvelocity{		Id:data.IDVELOCITY, 	Velocity:0.0, Acceleration:0.0,})
+	v.Stage[0].Instruments[data.SPOSITION_OFFSET]		= (unsafe.Pointer)(&data.SENSposition{		Id:data.IDPOSITION, 	Range:0.0,    Inclinaison:0.0, Altitude:0.0,})
+//	v.Stage[0].Instruments[data.STURBOPUMP_OFFSET]		= (unsafe.Pointer)(&data.SENSturboPump{		Id:data.IDTURBOPUMP, Rpm:0,})
+//	v.Stage[0].Instruments[data.SENGINEPRE_OFFSET]		= (unsafe.Pointer)(&data.SENSenginePressure{Id:data.IDENGINEPRE, Pressure:0.0,})
+	v.Stage[0].Instruments[data.STILTANGLE_OFFSET]		= (unsafe.Pointer)(&data.SENStiltAngle{		Id:data.IDTILTANGLE, Angle:0,})
+	v.Stage[0].Instruments[data.STHRUST_OFFSET]			= (unsafe.Pointer)(&data.SENSthrust{		Id:data.IDTHRUST, Thrust:0,})
+	v.Stage[0].Instruments[data.SMASSPROPELLANT_OFFSET]	= (unsafe.Pointer)(&data.SENSpropellantMass{Id:data.IDMASSPROPELLANT, Mflow: 0.0, Mass: F9_S1_PropellantMass,})
 
-	v.Stage[0].Handlers[data.SVELOCITY]			= SensorHandlers{ReadSensor: v.readVelocity,}
-	v.Stage[0].Handlers[data.SPOSITION]			= SensorHandlers{ReadSensor: v.readPosition, }
-//	v.Stage[0].Handlers[data.STURBOPUMP]		= SensorHandlers{ReadSensor: v.readTurboPumpRPM,}
-//	v.Stage[0].Handlers[data.SENGINEPRE]		= SensorHandlers{ReadSensor: v.readEnginePressure,}
-	v.Stage[0].Handlers[data.STILTANGLE]		= SensorHandlers{ReadSensor: v.readTiltAngle,}
-	v.Stage[0].Handlers[data.STHRUST]			= SensorHandlers{ReadSensor: v.readThrust,}
-	v.Stage[0].Handlers[data.SMASSPROPELLANT]	= SensorHandlers{ReadSensor: v.readPropellantMass, }
+	v.Stage[0].Handlers[data.SVELOCITY_OFFSET]			= SensorHandlers{ReadSensor: v.readVelocity,}
+	v.Stage[0].Handlers[data.SPOSITION_OFFSET]			= SensorHandlers{ReadSensor: v.readPosition, }
+//	v.Stage[0].Handlers[data.STURBOPUMP_OFFSET]			= SensorHandlers{ReadSensor: v.readTurboPumpRPM,}
+//	v.Stage[0].Handlers[data.SENGINEPRE_OFFSET]			= SensorHandlers{ReadSensor: v.readEnginePressure,}
+	v.Stage[0].Handlers[data.STILTANGLE_OFFSET]			= SensorHandlers{ReadSensor: v.readTiltAngle,}
+	v.Stage[0].Handlers[data.STHRUST_OFFSET]			= SensorHandlers{ReadSensor: v.readThrust,}
+	v.Stage[0].Handlers[data.SMASSPROPELLANT_OFFSET]	= SensorHandlers{ReadSensor: v.readPropellantMass, }
 	
 	// stage-2
 	v.Stage[1].Diameter 		= F9_S2_DIAMETER
@@ -85,21 +85,21 @@ func NewVehicle() *VEHICLE {
 	v.Stage[1].Instruments		= make([]unsafe.Pointer, data.INSTRUMENTS_COUNT)
 	v.Stage[1].Handlers			= make([]SensorHandlers, data.INSTRUMENTS_COUNT)
 	
-	v.Stage[1].Instruments[data.SVELOCITY]		= (unsafe.Pointer)(&data.SENSvelocity{		Id:data.SVELOCITY, 	Velocity:0.0, Acceleration:0.0,})
-	v.Stage[1].Instruments[data.SPOSITION]		= (unsafe.Pointer)(&data.SENSposition{		Id:data.SPOSITION, 	Range:0.0, 	  Inclinaison:0.0, Altitude:0.0,})
-//	v.Stage[1].Instruments[data.STURBOPUMP]		= (unsafe.Pointer)(&data.SENSturboPump{		Id:data.STURBOPUMP, Rpm:0,})
-//	v.Stage[1].Instruments[data.SENGINEPRE]		= (unsafe.Pointer)(&data.SENSenginePressure{Id:data.SENGINEPRE, Pressure:0.0,})
-	v.Stage[1].Instruments[data.STILTANGLE]		= (unsafe.Pointer)(&data.SENStiltAngle{		Id:data.STILTANGLE, Angle:0,})
-	v.Stage[1].Instruments[data.STHRUST]		= (unsafe.Pointer)(&data.SENSthrust{		Id:data.STHRUST, Thrust:0,})
-	v.Stage[1].Instruments[data.SMASSPROPELLANT]= (unsafe.Pointer)(&data.SENSpropellantMass{Id:data.SMASSPROPELLANT, Mass: F9_S2_PropellantMass,})
+	v.Stage[1].Instruments[data.SVELOCITY_OFFSET]		= (unsafe.Pointer)(&data.SENSvelocity{		Id:data.IDVELOCITY, 	Velocity:0.0, Acceleration:0.0,})
+	v.Stage[1].Instruments[data.SPOSITION_OFFSET]		= (unsafe.Pointer)(&data.SENSposition{		Id:data.IDPOSITION, 	Range:0.0, 	  Inclinaison:0.0, Altitude:0.0,})
+//	v.Stage[1].Instruments[data.STURBOPUMP_OFFSET]		= (unsafe.Pointer)(&data.SENSturboPump{		Id:data.IDTURBOPUMP, Rpm:0,})
+//	v.Stage[1].Instruments[data.SENGINEPRE_OFFSET]		= (unsafe.Pointer)(&data.SENSenginePressure{Id:data.IDENGINEPRE, Pressure:0.0,})
+	v.Stage[1].Instruments[data.STILTANGLE_OFFSET]		= (unsafe.Pointer)(&data.SENStiltAngle{		Id:data.IDTILTANGLE, Angle:0,})
+	v.Stage[1].Instruments[data.STHRUST_OFFSET]			= (unsafe.Pointer)(&data.SENSthrust{		Id:data.IDTHRUST, Thrust:0,})
+	v.Stage[1].Instruments[data.SMASSPROPELLANT_OFFSET]	= (unsafe.Pointer)(&data.SENSpropellantMass{Id:data.IDMASSPROPELLANT, Mass: F9_S2_PropellantMass,})
 
-	v.Stage[1].Handlers[data.SVELOCITY]			= SensorHandlers{ReadSensor: v.readVelocity, }
-	v.Stage[1].Handlers[data.SPOSITION]			= SensorHandlers{ReadSensor: v.readPosition, }
-//	v.Stage[1].Handlers[data.STURBOPUMP]		= SensorHandlers{ReadSensor: v.readTurboPumpRPM,}
-//	v.Stage[1].Handlers[data.SENGINEPRE]		= SensorHandlers{ReadSensor: v.readEnginePressure,}
-	v.Stage[1].Handlers[data.STILTANGLE]		= SensorHandlers{ReadSensor: v.readTiltAngle, }
-	v.Stage[1].Handlers[data.STHRUST]			= SensorHandlers{ReadSensor: v.readThrust,}
-	v.Stage[1].Handlers[data.SMASSPROPELLANT]	= SensorHandlers{ReadSensor: v.readPropellantMass,}
+	v.Stage[1].Handlers[data.SVELOCITY_OFFSET]			= SensorHandlers{ReadSensor: v.readVelocity, }
+	v.Stage[1].Handlers[data.SPOSITION_OFFSET]			= SensorHandlers{ReadSensor: v.readPosition, }
+//	v.Stage[1].Handlers[data.STURBOPUMP_OFFSET]			= SensorHandlers{ReadSensor: v.readTurboPumpRPM,}
+//	v.Stage[1].Handlers[data.SENGINEPRE_OFFSET]			= SensorHandlers{ReadSensor: v.readEnginePressure,}
+	v.Stage[1].Handlers[data.STILTANGLE_OFFSET]			= SensorHandlers{ReadSensor: v.readTiltAngle, }
+	v.Stage[1].Handlers[data.STHRUST_OFFSET]			= SensorHandlers{ReadSensor: v.readThrust,}
+	v.Stage[1].Handlers[data.SMASSPROPELLANT_OFFSET]	= SensorHandlers{ReadSensor: v.readPropellantMass,}
 
 	v.setFrontalArea()
 	return v
@@ -107,8 +107,8 @@ func NewVehicle() *VEHICLE {
 
 func (v *VEHICLE) Meco() {
 	if v.CurrentStage < v.TotalStages - 1 {
-		v.Stage[v.CurrentStage+1].Instruments[data.SVELOCITY] 	= v.Stage[v.CurrentStage].Instruments[data.SVELOCITY]
-		v.Stage[v.CurrentStage+1].Instruments[data.SPOSITION] 	= v.Stage[v.CurrentStage].Instruments[data.SPOSITION]
+		v.Stage[v.CurrentStage+1].Instruments[data.SVELOCITY_OFFSET] 	= v.Stage[v.CurrentStage].Instruments[data.SVELOCITY_OFFSET]
+		v.Stage[v.CurrentStage+1].Instruments[data.SPOSITION_OFFSET] 	= v.Stage[v.CurrentStage].Instruments[data.SPOSITION_OFFSET]
 		v.CurrentStage++
 	}
 }
