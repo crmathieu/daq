@@ -41,9 +41,3 @@ func main() {
 	go vehicle.launch()
 	vehicle.StreamData(conn)
 }
-
-func simplistic() {
-	for i:=0; i<100; i++ {
-
-	}
-}

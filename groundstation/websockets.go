@@ -5,43 +5,30 @@ import (
 	"net/http"
 	"fmt"
 	"github.com/crmathieu/daq/data"
-	//"github.com/crmathieu/daq/utils"
 	"github.com/go-redis/redis"
-	//"os"
-	"encoding/json"
-	"time"
 	"html/template"	
+	"unsafe"
+	"io"
 )
 
 var (
-//	addr     = flag.String("addr", ":8088", "http service address")
 	upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
+		ReadBufferSize:  1024,	
 		WriteBufferSize: 1024,
 	}
 
 	Rclient *redis.Client
-/*	streamRedisClient = redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("CORE_CACHE_ADDR"),
-		Password: os.Getenv("CORE_CACHE_PWD"),
-		DB:       0,
-	})*/
 
-	gHub   *Hub
+	LaunchHUB   *Hub
 	gsid  string
 	gsEnv string
 )
 
-const (
-	SENDTO_CHANNEL_READ_DELAY = 13
-	SENDTO_CHANNEL_SIZE       = 30
-	DEFAULT_PLATFORM          = "stage"
-)
+// NewLaunchClient ------------------------------------------------------------
+// establishes a websocket connection with a client
+// ----------------------------------------------------------------------------
+func NewLaunchClient(w http.ResponseWriter, r *http.Request) {
 
-// establishes a websocket connection with a client----------------------------
-func newConn(w http.ResponseWriter, r *http.Request) {
-
-	launchTok := r.URL.Path[len("/ws/"):]
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
@@ -52,26 +39,25 @@ func newConn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// build an OBS client and register it to the connection hub
-	streamer := CLIENT{
-		Key:          setClientKey(ws, launchTok),
-		Conn:         ws,
-		SendTo:       make(chan data.SENSgeneric, SENDTO_CHANNEL_SIZE),
-		LaunchToken: launchTok,
+	client := CLIENT{
+		Cursor:		  DACQ.iQue.Latest(), // obtain cursor of latest position from DACQ
+		Socket:       ws,
+		ClientToken:  r.URL.Path[len("/ws/"):], //clientToken,
 		Valid:        true,
 		WriteErr:     false,
 		ReadErr:      false,
 	}
 
 	// register CLIENT pointer with hub
-	gHub.Register(&streamer)
+	LaunchHUB.register <- &client
 
 	// now starts a go routine that will handle the connection writes
+	go WriteLaunchTelemetry(&client)
 	// and a go routine that will detect when a connection drops
-	go stickerListener(launchTok, &streamer)
-	go readForDisconnect(&streamer)
+	go DetectClientDisconnection(&client)
 }
 
-//  closeConn------------------------------------------------------------------
+// closeConn ------------------------------------------------------------------
 // closes the websocket connection associated with a given userid.
 // this will work well with a single egomonster instance, but for
 // multi-instances and assuming we have a way to target each instance
@@ -80,8 +66,9 @@ func newConn(w http.ResponseWriter, r *http.Request) {
 // there will be at least one instance that will succeed.
 // ----------------------------------------------------------------------------
 func closeConn(w http.ResponseWriter, r *http.Request) {
-	launchToken := r.URL.Path[len("/ws/"):]
-	streamer, err := gHub.getGroundStationClient(launchToken)
+
+	clientToken := r.URL.Path[len("/ws/"):]
+	client, err := LaunchHUB.GetLaunchClient(clientToken)
 	if err != nil {
 		// this happens when a userid is not registered with this instance.
 		// the same userid could be registered with another instance. The problem
@@ -89,82 +76,47 @@ func closeConn(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("CloseConn - %s\n", err.Error())
 		return
 	}
-	gHub.Unregister(streamer[0])
+	LaunchHUB.unregister <- client
 }
 
-// setClientKey----------------------------------------------------------------
+// setClientKey ---------------------------------------------------------------
 func setClientKey(ws *websocket.Conn, id string) string {
 	return id + "_" + ws.RemoteAddr().String()
 }
 
-// stickerListener-------------------------------------------------------------
-func stickerListener(token string, streamer *CLIENT) {
 
-	defer func() {
-		// recover from panic caused by writing to a closed channel
-		if r := recover(); r != nil {
-			fmt.Printf("\n*** Recovering from panic\n%v\n***\n", r)
-		}
-	}()
-
-	// wait for an event to happen (either SendTo or Finished channel)
-	loop := true
-	for loop && streamer.Valid {
-		select {
-		case pl, ok := <-streamer.SendTo:
-			if ok {
-				fmt.Println("Receiving payload from sendTo channel...")
-				var payloadInBytes []byte
-				payloadInBytes, err := json.Marshal(pl)
-				if err == nil {
-					if streamer.Valid {
-						err = streamer.Conn.WriteMessage(websocket.TextMessage, payloadInBytes)
-						if err == nil {
-							// wait a bit before reading the next payload
-							//gHub.totalStickersSent++
-							//gHub.totalAmount += pl.Total
-							time.Sleep(SENDTO_CHANNEL_READ_DELAY * time.Second)
-							continue
-						}
-						fmt.Printf("stream-token(%s): Writing Error - %s\n", token, err.Error())
-						streamer.WriteErr = true
-						//Ghub.Unregister(streamer)
-					}
-				} else {
-					fmt.Printf("stream-token(%s): Payload Unmarshalling Error - %s\n", token, err.Error())
-					continue
-				}
-			} else {
-				streamer.SendTo = nil
-				fmt.Println("Channel closed...")
-			}
-			loop = false
-		}
+// WriteLaunchTelemetry --------------------------------------------------------
+func WriteLaunchTelemetry(client *CLIENT) {
+	var dp data.DataPoint
+	var err error
+	for {
+		if dp, err = client.Cursor.ReadPacket(); err != nil {
+			fmt.Println(err)
+		} else {
+			client.Socket.WriteMessage(websocket.BinaryMessage, (*(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(&dp)))[:data.DATAPOINT_SIZE])
+		} 
 	}
-	if streamer.Valid {
-		fmt.Println("Unregistering...")
-		gHub.Unregister(streamer)
-	}
-	fmt.Printf("stream-token(%s): Closing CLIENT\n", streamer.LaunchToken)
 }
 
-// readForDisconnect----------------------------------------------------------
-func readForDisconnect(streamer *CLIENT) {
+// DetectClientDisconnection --------------------------------------------------
+func DetectClientDisconnection(client *CLIENT) {
 	// read connection (we ignore what is being received) until an error happens
 	ever := true
 	for ever {
-		_, _, err := streamer.Conn.ReadMessage()
+		_, _, err := client.Socket.ReadMessage()
 		if err != nil {
 			// The connection dropped
-			fmt.Printf("stream-key(%s): Connection dropped  - %s\n", streamer.Key, err.Error())
-			streamer.ReadErr = true
+			fmt.Printf("stream-key(%s): Connection dropped  - %s\n", client.ClientToken, err.Error())
+			client.ReadErr = true
 			ever = false
-			gHub.Unregister(streamer)
+			LaunchHUB.unregister <- client
 		}
 	}
 }
 
-// called on /stream endpoint. returns a template filled with creatorID--------
+// serverHome -----------------------------------------------------------------
+// called on /stream endpoint. returns a template filled with a launchtoken
+// ----------------------------------------------------------------------------
 func serveHome(page http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -172,15 +124,11 @@ func serveHome(page http.HandlerFunc) http.HandlerFunc {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-/*		if r.URL.Path[len("/stream/"):] == "" {
-			http.Error(w, "Missing Stream Token", http.StatusMethodNotAllowed)
-			return
-		}*/
 		page(w, r)
 	})
 }
 
-// homeTest--------------------------------------------------------------------
+// homeTest -------------------------------------------------------------------
 func homeTest(w http.ResponseWriter, r *http.Request) {
 
 	homeTempl, err := template.ParseFiles("./assets/html/index.html")
@@ -189,20 +137,20 @@ func homeTest(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	launchtoken := r.URL.Path[len("/stream/"):]
+	clientToken := r.URL.Path[len("/stream/"):]
 
 	// prepare template data ...
 	var v = struct {
 		SocketType   string
 		Host         string
-		LaunchToken string
+		ClientToken  string
 		SoundOn      string
 		NotifVol     string
 		Error        string
 	}{
 		"ws",
 		r.Host,
-		launchtoken,
+		clientToken,
 		"1",
 		"50",
 		"",
@@ -223,44 +171,45 @@ func home(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Println("sending template")
-	launchtoken := "123" //r.URL.Path[len("/stream/"):]
+	token := r.URL.Path[len("/stream/"):]
 
-	// decode the token so that we can query the DB
-	//launchID := utils.Decode(launchtoken)
+	// the token can be used to authorize certain clients only
+	if authorized(token) {
 
-	// Unmarshal settings into this struct
-	notificationSettings := struct {
-		SoundOn  string `json:"soundOn"`
-		NotifVol string `json:"notifVol"`
-	}{}
+		// Unmarshal settings into this struct
+		notificationSettings := struct {
+			SoundOn  string `json:"soundOn"`
+			NotifVol string `json:"notifVol"`
+		}{}
 
-	/*
-	// using the creatorID - query MySQL DB for settings related to sounds et al
-	err = database.Db.QueryRow("SELECT sound_on, volume FROM NotificationSettings WHERE user_id = ?", launchID).Scan(&notificationSettings.SoundOn, &notificationSettings.NotifVol)
-	if err != nil {
-		fmt.Printf("home - Error selecting notifications settings - user_id = %s : %s\n", launchID, err.Error())
-		// get the string of the error so they have some info
-		s := err.Error()
-		// take note that error happened and show user so they can retry
-		notifError = "There was an issue fetching your Alert settings! Please try refreshing or updating your settings! " + s
+		// prepare template data ...
+		var v = struct {
+			SocketType   string
+			Host         string
+			ClientToken  string
+			SoundOn      string
+			NotifVol     string
+			Error        string
+		}{
+			"ws",
+			r.Host,
+			CreateLaunchSessionToken(),
+			notificationSettings.SoundOn,
+			notificationSettings.NotifVol,
+			notifError,
+		}
+		homeTempl.Execute(w, &v)
+
+	} else {
+		w.WriteHeader(http.StatusUnauthorized)
+		io.WriteString(w, fmt.Sprintf("%s: Invalid token\n", token))
 	}
-*/
+}
 
-	// prepare template data ...
-	var v = struct {
-		SocketType   string
-		Host         string
-		LaunchToken string
-		SoundOn      string
-		NotifVol     string
-		Error        string
-	}{
-		"ws",
-		r.Host,
-		launchtoken,
-		notificationSettings.SoundOn,
-		notificationSettings.NotifVol,
-		notifError,
+func authorized(token string) bool {
+	// place code here to authorize only certain tokens
+	if token != "123" {
+		return false
 	}
-	homeTempl.Execute(w, &v)
+	return true
 }

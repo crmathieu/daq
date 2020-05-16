@@ -18,15 +18,15 @@ package data
 
 const(
 	// instruments offset in sensors map
- 	SVELOCITY = uint16(0) 
-    SPOSITION = uint16(1)
+ 	SVELOCITY_OFFSET = uint16(0) 
+    SPOSITION_OFFSET = uint16(1)
 //    STURBOPUMP = 2
 //	SENGINEPRE = 3
-	STILTANGLE = uint16(2)
-	STHRUST = uint16(3)
-	SMASSPROPELLANT = uint16(4)
+	STILTANGLE_OFFSET = uint16(2)
+	STHRUST_OFFSET = uint16(3)
+	SMASSPROPELLANT_OFFSET = uint16(4)
 
-	INSTRUMENTS_COUNT = SMASSPROPELLANT + 1
+	INSTRUMENTS_COUNT = SMASSPROPELLANT_OFFSET + 1
 
 	// Rocket constants
 	//DRYWEIGHT = 15000
@@ -34,63 +34,71 @@ const(
 	//MAXVOL_PROPELLANT = 200000
 	
 	DOWNLINK_SERVER = "localhost:2000"
+
+	IDVELOCITY = uint32(1)
+    IDPOSITION = uint32(2)
+//    STURBOPUMP = 2
+//	SENGINEPRE = 3
+	IDTILTANGLE = uint32(3)
+	IDTHRUST = uint32(4)
+	IDMASSPROPELLANT = uint32(5)
 )   
 
 
 
 // each dp is 16 bytes long
 type SENSvelocity struct {
-	Id    	 		uint16
+	Id    	 		uint32 //uint16
 	Velocity 		float32
 	Acceleration 	float32
-	Reserved 		[6]byte
+	Reserved 		[4]byte //[6]byte
 }
 
 type SENSposition struct {
-	Id    		uint16
+	Id    		uint32 //uint16
 	Range 		float32
     Altitude 	float32
 	Inclinaison float32
-	reserved	[2]byte
+	//reserved	[2]byte
 }
 
 type SENStiltAngle struct {
-	Id   uint16
+	Id   uint32 //uint16
 	Angle  float32
 	RateOfChange float32
-	Reserved [10]byte
+	Reserved [4]byte //[6]byte
 }
 
 type SENSthrust struct {
-	Id   	uint16
+	Id   	uint32 //uint16
 	Thrust  float32
-	Stage   int8
-	Reserved [9]byte
+	Stage   int32 //int8
+	Reserved [4]byte //[9]byte
 }
 
 type SENSturboPump struct {
-	Id   uint16
+	Id   uint32 //uint16
 	Rpm  int32
-	Reserved [10]byte
+	Reserved [8]byte //[10]byte
 }
 
 type SENSenginePressure struct {
-	Id   	 uint16
+	Id   	 uint32 //uint16
 	Pressure float32
-	Reserved [10]byte
+	Reserved [8]byte //[10]byte
 }
 
 type SENSpropellantMass struct {
-	Id   	 uint16
+	Id   	 uint32 //uint16
 	Mass   	 float32
 	Mejected float32
 	Mflow	 float32
-	reserved [2]byte
+	//reserved [2]byte
 }
 
-type SENSgeneric struct {
-	Id    	 		uint16
-	Reserved 		[14]byte
+type DataPoint struct {
+	Id    	 		uint32 //uint16
+	Reserved 		[12]byte //[14]byte
 }
 
 type Pempty []byte

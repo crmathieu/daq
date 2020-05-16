@@ -1,62 +1,89 @@
 package main
 import (
+	//"github.com/gorilla/websocket"
+	//"github.com/crmathieu/daq/data"
+	//"github.com/crmathieu/daq/utils"
+	qu "github.com/crmathieu/daq/packages/queue"
 	"github.com/gorilla/websocket"
-	"github.com/crmathieu/daq/data"
-	"github.com/crmathieu/daq/utils"
-	"encoding/json"
-	"io/ioutil"
-
+	//"encoding/json"
+	//"io/ioutil"
+	//"net"
 	"time"
 	"sync"
 	"math/rand"
 	"fmt"
 	"errors"
-	"net/http"
+	//"net/http"
+)
+
+// hub maintains the set of active clients
+// and broadcasts messages to the clients.
+
+const (
+	REG_CHANNELS_SIZE = 64
 )
 
 type CLIENT struct {
-	Key          string          		// corresponds to id_ip_port
-	Conn         *websocket.Conn 		// The websocket connection.
-	SendTo       chan data.SENSgeneric  // Buffered channel of outbound messages.
-	LaunchToken string          		// what identifies this launch
-	Valid        bool            		// indicates if we can use this client
-	ReadErr      bool
-	WriteErr     bool
+	ClientToken 	string
+	Cursor 			*qu.QueueCursor 	// queue attached to this channel
+	Socket         	*websocket.Conn 	// The websocket connection with client
+	Valid			bool
+	WriteErr		bool
+	ReadErr			bool
+	Finished     	chan bool			// to close things gracefully
+	Ready           chan bool      		// indicate channel is ready for streaming
 }
 
 // hub maintains the set of active clients
 // and broadcasts messages to the clients.
 
 type Hub struct {
-	l                 *sync.Mutex           // handles concurrent access to hubMap
-	hubMap            map[string][]*CLIENT  // Registered clients.
-	writeErr          int                   // number of write errors encounter
-	readErr           int
-//	totalStickersSent int
-	totalOpenConn     int
-	totalCloseConn    int
-//	totalAmount       float64
-	start             time.Time
-	alive             bool
+	l 				  *sync.RWMutex           		// handles concurrent access to hubMap
+//	hubMap            map[string][]*LaunchChannel  	// Registered launches.
+	hubMap            map[string]*CLIENT  			// Registered clients to this launch.
+	launchMap 		  map[string]string         	// clientid -> stream-token
+	register   		  chan *CLIENT					// chan *LaunchChannel       // requests from launches to register.
+	unregister 		  chan *CLIENT 					// chan *LaunchChannel       // requests from launches to Unregister.
 }
-
-//var	gHub   *Hub
-//var	gsid  string
 
 func NewHub() *Hub {
 	return &Hub{
-		l:                 &sync.Mutex{},
-		hubMap:            make(map[string][]*CLIENT),
-		writeErr:          0,
-		readErr:           0,
-//		totalStickersSent: 0,
-		totalOpenConn:     0,
-		totalCloseConn:    0,
-//		totalAmount:       0.0,
-		start:             time.Now(),
-		alive:             true,
+		l:          &sync.RWMutex{},
+		register:   make(chan *CLIENT, REG_CHANNELS_SIZE),
+		unregister: make(chan *CLIENT, REG_CHANNELS_SIZE),
+		hubMap:     make(map[string]*CLIENT),
+		launchMap:  make(map[string]string),
 	}
 }
+
+// GetLaunchClient ------------------------------------------------------------
+// 		determines if a clientToken has already been register in the hub. If
+//		this is the case, returns the clientChannel associated to it
+// ---------------------------------------------------------------------------- 
+func (h *Hub) GetLaunchClient(clientToken string) (*CLIENT, error) {
+	h.l.RLock()
+	client, ok := h.hubMap[clientToken]
+	h.l.RUnlock()
+
+	if ok {
+		return client, nil
+	}
+	return nil, errors.New("Hub: Creator Token (" + clientToken + ") has not registered yet!")
+}
+
+// FetchToken -----------------------------------------------------------------
+//		determines if a launch is currently streaming. If this is the case,
+// 		returns the stream-token corresponding to this launch
+// ----------------------------------------------------------------------------
+func (h *Hub) FetchToken(launchid string) (string, error) {
+	var token string
+	var ok bool
+	if token, ok = h.launchMap[launchid]; ok == false {
+		return "", errors.New("Launch "+launchid+" is not streaming...")
+	}
+	return token, nil
+}
+
 
 // RandStringBytes ------------------------------------------------------------
 // creates a random string
@@ -78,6 +105,10 @@ func SetGSInstanceID() {
 	gsid = RandStringBytes(3)
 }
 
+func CreateLaunchSessionToken() string {
+	return RandStringBytes(8)
+}
+
 // GetGSInstanceID ------------------------------------------------------------
 // gets the goundstation instance ID
 // ----------------------------------------------------------------------------
@@ -85,8 +116,69 @@ func GetGSInstanceID() string {
 	return gsid
 }
 
+func (h *Hub) AcceptClient() {
+
+	//var err error
+	for {
+		// keep looping waiting on h.register -or- h.unregister channels
+		select {
+
+		case client := <-h.register:
+			fmt.Println("registering new DAQ connection")
+			// a new creator wants to register
+			h.l.RLock()
+			if _, ok := h.hubMap[client.ClientToken]; ok {
+				// this streamer already exists
+				fmt.Println("Client: " + client.ClientToken + ": Duplicate connection")
+				fmt.Println("Replacing old connection with new...")
+				h.hubMap[client.ClientToken].Finished <- true
+				delete(h.hubMap, client.ClientToken)
+//				delete(h.launchMap, client.clientid)
+
+			}
+//			streams, _ := client.Conn.Streams()
+//			client.iQue.WriteHeader(streams)
+			h.hubMap[client.ClientToken] = client
+			//h.launchMap[streamer.Launchid] = streamer.LaunchToken
+			client.Ready<- true
+			fmt.Println("END -> registering new DAQ connection")
+
+			h.l.RUnlock()
+
+
+		case client := <-h.unregister:
+			fmt.Println("UNregistering DAQ connection")
+			h.l.RLock()
+			if _, ok := h.hubMap[client.ClientToken]; ok {
+
+				// registering the stream end in temy and removing cache
+				//err = StopStream(streamer)
+				//if err != nil {
+				//	fmt.Println("Unregister: " + err.Error())
+				//}
+
+				//if streamer.ReadErr {
+				//	h.readErr++
+				//}
+				//if streamer.WriteErr {
+				//	h.writeErr++
+				//}
+				//h.totalCloseConn++
+				delete(h.hubMap, client.ClientToken)
+				//delete(h.creatorMap, streamer.Creatorid)
+				client.Finished <- true
+			}
+			fmt.Println("END -> UNregistering DAQ connection")
+			h.l.RUnlock()
+
+		}
+	}
+}
+
+
 // Register--------------------------------------------------------------------
-func (h *Hub) Register(gsc *CLIENT) {
+/*
+func (h *Hub) RegisterXX(gsc *CLIENT) {
 	gsid := GetGSInstanceID()
 	h.l.Lock()
 	if _, ok := h.hubMap[gsc.LaunchToken]; ok {
@@ -134,7 +226,7 @@ func (h *Hub) Register(gsc *CLIENT) {
 }
 
 // Unregister -----------------------------------------------------------------
-func (h *Hub) Unregister(gsc *CLIENT) bool {
+func (h *Hub) UnregisterXX(gsc *CLIENT) bool {
 	fmt.Printf("Hub Unregistration - Attempting to unregister stream-token %s\n", gsc.LaunchToken)
 	h.l.Lock()
 	defer h.l.Unlock()
@@ -188,6 +280,7 @@ func (h *Hub) Unregister(gsc *CLIENT) bool {
 	fmt.Printf("stream-token(%s): Hub Unregistration - Could not find connection for key = %s\n", gsc.LaunchToken, gsc.Key)
 	return false
 }
+
 
 // getGroundStationClient -----------------------------------------------------
 func (h *Hub) getGroundStationClient(launchToken string) ([]*CLIENT, error) {
@@ -252,7 +345,7 @@ func sendSticker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var pl data.SENSgeneric
+	var pl data.DataPoint
 	err = json.Unmarshal(plBytes, &pl)
 	if err != nil {
 		fmt.Printf("SendSticker(egoID=%s): Error unmarshalling payload - %s\nPAYLOAD=%s\n", gsid, err.Error(), string(plBytes))
@@ -260,15 +353,15 @@ func sendSticker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
+	
 	// check whether user is logged-in or not
-	_, err = GetSessionCoredata(pl.UserID, &w, r)
-	if err != nil {
-		fmt.Printf("Medusa-user(%s): access denied! - %s\n", pl.UserID, err.Error())
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-	*/
+	//_, err = GetSessionCoredata(pl.UserID, &w, r)
+	//if err != nil {
+	//	fmt.Printf("Medusa-user(%s): access denied! - %s\n", pl.UserID, err.Error())
+	//	w.WriteHeader(http.StatusForbidden)
+	//	return
+	//}
+	
 	// publish this request to all instances that subscribed to the same channel
 	fmt.Printf("SendSticker(egoID=%s) - publishing payload: %s\n", GetGSInstanceID(), string(plBytes))
 	err = Publish(string(plBytes))
@@ -278,4 +371,4 @@ func sendSticker(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-}
+}*/

@@ -87,7 +87,7 @@ func (v *VEHICLE) launch() {
 			fmt.Println("Meco wait", mecoTimer)
 			if mecoTimer <= 0 {
 				meco = false
-				if v.CurrentStage + 1 < int8(len(v.Stage)) {
+				if v.CurrentStage + 1 < int32(len(v.Stage)) {
 					v.CurrentStage++
 				} else {
 					fmt.Println("Shutting down!")
@@ -98,7 +98,7 @@ func (v *VEHICLE) launch() {
 		meco = v.setRates(meco)
 		v.updateRocketSensors()
 		fmt.Println(v.Clock, "--> Vel:",v.Velocity, "m/s -- ", "Alt:",v.Altitude/1000,	"km -- Downrange:", v.Range/1000,"km", "Gamma=",v.Gamma*rad,"deg")
-		//fmt.Println(v.Clock, "-->",(v.Velocity)*3.6, "k/h -- ", "Alt:",v.Altitude/1000,	"km, Downrange:", (*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Range/1000,"km, Gamma=",v.Gamma)
+		//fmt.Println(v.Clock, "-->",(v.Velocity)*3.6, "k/h -- ", "Alt:",v.Altitude/1000,	"km, Downrange:", (*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION_OFFSET])).Range/1000,"km, Gamma=",v.Gamma)
 
 	}	
 }
@@ -128,7 +128,7 @@ func (v *VEHICLE) setMdot(stageNumber int) {
 //		g = GRAVITY_ACC * (r0/(r0+h))**2
 // ----------------------------------------------------------------------------  
 func (v *VEHICLE) setGravityAcceleration() {
-	v.G = GRAVITY_ACC * math.Pow(EARTHRADIUS / (EARTHRADIUS + float64((*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Altitude)), 2)
+	v.G = GRAVITY_ACC * math.Pow(EARTHRADIUS / (EARTHRADIUS + float64((*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION_OFFSET])).Altitude)), 2)
 }
 
 // setPolarDot ----------------------------------------------------------------
@@ -147,20 +147,25 @@ func (v *VEHICLE) setGravityAcceleration() {
 // ----------------------------------------------------------------------------  
 
 func (v *VEHICLE) setGammaDot() {
-//	v.Velocity := float64((*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY])).Velocity)
-//	h := float64((*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Altitude)
+//	v.Velocity := float64((*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY_OFFSET])).Velocity)
+//	h := float64((*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION_OFFSET])).Altitude)
 	v.gamma_dot = ((math.Pow(v.Velocity, 2)/(EARTHRADIUS + v.Altitude)) - v.G) * math.Cos(v.Gamma)/v.Velocity
 }
 
 const GAMMA0 = 89
 func (v *VEHICLE) updateCurveAngle(maxtime float32) {
 	//tan φ = (1-t/T) * tan θ0
-	v.Gamma = rad2deg(math.Atan((1 - float64(v.Clock/maxtime)) * math.Tan(deg2rad(GAMMA0))))
+	if v.Gamma > 0 {
+		v.Gamma = rad2deg(math.Atan((1 - float64(v.Clock/maxtime)) * math.Tan(deg2rad(GAMMA0))))
+		if v.Gamma <= 0 {
+			v.Gamma = 0
+		}
+	}
 }
 
 func (v *VEHICLE) setISAparams() {
-	v.Altitude = float64((*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Altitude)
-	v.Velocity = float64((*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY])).Velocity)
+	v.Altitude = float64((*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION_OFFSET])).Altitude)
+	v.Velocity = float64((*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY_OFFSET])).Velocity)
 	v.G = GRAVITY_ACC / math.Pow(1 + (v.Altitude/EARTHRADIUS), 2)
 	v.Rho = RHO * math.Exp(-v.Altitude/H0)
 }
@@ -194,9 +199,9 @@ func (v *VEHICLE) updateGravityTurn() {
 	}*/
 	v.updateCurveAngle(60)
 
-	(*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Altitude = float32(v.Altitude) + float32(hdot)
-	(*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Range = (*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION])).Range + float32(xdot)
-	(*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY])).Velocity = float32(v.Velocity) + float32(vdot)
+	(*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION_OFFSET])).Altitude = float32(v.Altitude) + float32(hdot)
+	(*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION_OFFSET])).Range = (*(*data.SENSposition)(v.Stage[v.CurrentStage].Instruments[data.SPOSITION_OFFSET])).Range + float32(xdot)
+	(*(*data.SENSvelocity)(v.Stage[v.CurrentStage].Instruments[data.SVELOCITY_OFFSET])).Velocity = float32(v.Velocity) + float32(vdot)
 }
 
 // setDrag --------------------------------------------------------------------
@@ -330,5 +335,11 @@ func (v * VEHICLE) updateGammaDot() {
 func (v * VEHICLE) updateGamma() {
 	//tan φ = (1-t/T) * tan θ0
 	//v.Gamma = math.Atan((1 - float64(v.Clock)/v.TotalBurnTime) * math.Tan(GAMMA0*deg))
-	v.Gamma = v.Gamma - v.gamma_dot
+	if v.Gamma > 0 {
+		v.Gamma = v.Gamma - v.gamma_dot
+		if v.Gamma < 0 {
+			v.Gamma = 0
+		}
+	}
+
 }
