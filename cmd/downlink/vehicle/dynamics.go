@@ -58,7 +58,7 @@ package main
 */
 
 import(
-	"github.com/crmathieu/daq/data"
+	"github.com/crmathieu/daq/packages/data"
 	"time"
 	"math"
 	"fmt"

@@ -1,9 +1,8 @@
 // Package pubsub implements publisher-subscribers model used in multi-channel streaming.
-package queue
+package streamer
 
 import (
-	"github.com/crmathieu/daq/packages/pktque"	
-	"github.com/crmathieu/daq/data"	
+	"github.com/crmathieu/daq/packages/data"	
 	"io"
 	"sync"
 )
@@ -20,7 +19,7 @@ import (
 
 // One publisher and multiple subscribers thread-safe packet buffer queue.
 type Queue struct {
-	buf                      *pktque.Buf
+	buf                      *quBuf
 	head, tail               int
 	lock                     *sync.RWMutex
 	cond                     *sync.Cond
@@ -30,9 +29,9 @@ type Queue struct {
 
 type QueueCursor struct {
 	que    *Queue
-	pos    pktque.BufPos
+	pos    BufPos
 	gotpos bool
-	init   func(buf *pktque.Buf, dpidx int) pktque.BufPos
+	init   func(buf *quBuf, dpidx int) BufPos
 }
 
 func (que *Queue) newCursor() *QueueCursor {
@@ -46,7 +45,7 @@ func (que *Queue) newCursor() *QueueCursor {
 // ----------------------------------------------------------------------------
 func NewQueue() *Queue {
 	q := &Queue{}
-	q.buf = pktque.NewBuf()
+	q.buf = NewBuf()
 	q.lock = &sync.RWMutex{}
 	q.cond = sync.NewCond(q.lock.RLocker())
 	q.dpidx = -1
@@ -81,7 +80,7 @@ func (que *Queue) WritePacket(dp data.DataPoint) (err error) {
 // Create cursor position at latest packet.
 func (que *Queue) Latest() *QueueCursor {
 	cursor := que.newCursor()
-	cursor.init = func(buf *pktque.Buf, dpidx int) pktque.BufPos {
+	cursor.init = func(buf *quBuf, dpidx int) BufPos {
 		return buf.Tail
 	}
 	return cursor
@@ -92,7 +91,7 @@ func (que *Queue) Latest() *QueueCursor {
 // ----------------------------------------------------------------------------
 func (que *Queue) Oldest() *QueueCursor {
 	cursor := que.newCursor()
-	cursor.init = func(buf *pktque.Buf, dpidx int) pktque.BufPos {
+	cursor.init = func(buf *quBuf, dpidx int) BufPos {
 		return buf.Head
 	}
 	return cursor

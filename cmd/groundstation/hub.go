@@ -1,19 +1,12 @@
 package main
 import (
-	//"github.com/gorilla/websocket"
-	//"github.com/crmathieu/daq/data"
-	//"github.com/crmathieu/daq/utils"
-	qu "github.com/crmathieu/daq/packages/queue"
+	"github.com/crmathieu/daq/packages/streamer"
 	"github.com/gorilla/websocket"
-	//"encoding/json"
-	//"io/ioutil"
-	//"net"
 	"time"
 	"sync"
 	"math/rand"
 	"fmt"
 	"errors"
-	//"net/http"
 )
 
 // hub maintains the set of active clients
@@ -25,7 +18,7 @@ const (
 
 type CLIENT struct {
 	ClientToken 	string
-	Cursor 			*qu.QueueCursor 	// queue attached to this channel
+	Cursor 			*streamer.QueueCursor 	// queue attached to this channel
 	Socket         	*websocket.Conn 	// The websocket connection with client
 	Valid			bool
 	WriteErr		bool
@@ -39,9 +32,8 @@ type CLIENT struct {
 
 type Hub struct {
 	l 				  *sync.RWMutex           		// handles concurrent access to hubMap
-//	hubMap            map[string][]*LaunchChannel  	// Registered launches.
 	hubMap            map[string]*CLIENT  			// Registered clients to this launch.
-	launchMap 		  map[string]string         	// clientid -> stream-token
+//	launchMap 		  map[string]string         	// clientid -> stream-token
 	register   		  chan *CLIENT					// chan *LaunchChannel       // requests from launches to register.
 	unregister 		  chan *CLIENT 					// chan *LaunchChannel       // requests from launches to Unregister.
 }
@@ -52,15 +44,15 @@ func NewHub() *Hub {
 		register:   make(chan *CLIENT, REG_CHANNELS_SIZE),
 		unregister: make(chan *CLIENT, REG_CHANNELS_SIZE),
 		hubMap:     make(map[string]*CLIENT),
-		launchMap:  make(map[string]string),
+//		launchMap:  make(map[string]string),
 	}
 }
 
-// GetLaunchClient ------------------------------------------------------------
-// 		determines if a clientToken has already been register in the hub. If
-//		this is the case, returns the clientChannel associated to it
+// GetTelemetryClient ---------------------------------------------------------
+// determines if a clientToken has already been register in the hub. If
+// this is the case, returns the client associated to it
 // ---------------------------------------------------------------------------- 
-func (h *Hub) GetLaunchClient(clientToken string) (*CLIENT, error) {
+func (h *Hub) GetTelemetryClient(clientToken string) (*CLIENT, error) {
 	h.l.RLock()
 	client, ok := h.hubMap[clientToken]
 	h.l.RUnlock()
@@ -72,17 +64,17 @@ func (h *Hub) GetLaunchClient(clientToken string) (*CLIENT, error) {
 }
 
 // FetchToken -----------------------------------------------------------------
-//		determines if a launch is currently streaming. If this is the case,
-// 		returns the stream-token corresponding to this launch
+// determines if a launch is currently streaming. If this is the case,
+// returns the stream-token corresponding to this launch
 // ----------------------------------------------------------------------------
-func (h *Hub) FetchToken(launchid string) (string, error) {
+/*func (h *Hub) FetchToken(launchid string) (string, error) {
 	var token string
 	var ok bool
 	if token, ok = h.launchMap[launchid]; ok == false {
 		return "", errors.New("Launch "+launchid+" is not streaming...")
 	}
 	return token, nil
-}
+}*/
 
 
 // RandStringBytes ------------------------------------------------------------
