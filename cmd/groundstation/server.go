@@ -6,12 +6,10 @@ import (
 	"fmt"
 )
 
-//var iQue *queue.Queue
-
 const PATH_2_ROOT = "."
 func main() {
 
-	if InitConfig() {
+	if InitGroundStation() {
 		LaunchHUB = NewHub()
 
 		// create an http server to serve client assets
@@ -19,8 +17,8 @@ func main() {
 		fs := http.FileServer(http.Dir(PATH_2_ROOT + "/assets"))
 		mux.Handle("/", fs)
 		mux.HandleFunc("/stream/", serveHome(home))
-		mux.HandleFunc("/ws/", NewLaunchClient)
-		mux.HandleFunc("/wc/", closeConn)
+		mux.HandleFunc("/ws/", NewGroundStationClient)
+		mux.HandleFunc("/wc/", CloseGroundStationClient)
 
 		server := &http.Server{
 			Addr: "0.0.0.0:1969",
@@ -36,17 +34,11 @@ func main() {
 				AllowCredentials: true,
 				Debug:            false,
 			}).Handler(mux),
-
-			//Handler: cors.AllowAll().Handler(mux),
 		}
 		fmt.Printf("\n...GroundStation %s is running on port: 1969\n", GetGSInstanceID())
 		go server.ListenAndServe()	
 
-		DACQ = NewDaq()
-		DACQ.ListenAndServer()
-
-		//log.Fatal(server.ListenAndServe())
-
-		//time.Sleep(10 * time.Second)
+		DAQ = NewDaq()
+		DAQ.ListenAndServer()
 	}
 }

@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/gorilla/websocket"
-	"net/http"
-	"fmt"
-	"github.com/crmathieu/daq/data"
+	"github.com/crmathieu/daq/packages/data"
 	"github.com/go-redis/redis"
 	"html/template"	
+	"net/http"
+	"fmt"
 	"unsafe"
 	"io"
 )
@@ -24,10 +24,10 @@ var (
 	gsEnv string
 )
 
-// NewLaunchClient ------------------------------------------------------------
-// establishes a websocket connection with a client
+// NewGroundStationClient -----------------------------------------------------
+// establishes a websocket connection with a (browser) client
 // ----------------------------------------------------------------------------
-func NewLaunchClient(w http.ResponseWriter, r *http.Request) {
+func NewGroundStationClient(w http.ResponseWriter, r *http.Request) {
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -38,9 +38,9 @@ func NewLaunchClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// build an OBS client and register it to the connection hub
+	// build a client ...
 	client := CLIENT{
-		Cursor:		  DACQ.iQue.Latest(), // obtain cursor of latest position from DACQ
+		Cursor:		  DAQ.sQue.Latest(), // obtain cursor of latest position from DAQ
 		Socket:       ws,
 		ClientToken:  r.URL.Path[len("/ws/"):], //clientToken,
 		Valid:        true,
@@ -48,29 +48,24 @@ func NewLaunchClient(w http.ResponseWriter, r *http.Request) {
 		ReadErr:      false,
 	}
 
-	// register CLIENT pointer with hub
+	// ... and register it to the connection hub
 	LaunchHUB.register <- &client
 
-	// now starts a go routine that will handle the connection writes
+	// start a go routine that will send telemetry data to client
 	go WriteLaunchTelemetry(&client)
-	// and a go routine that will detect when a connection drops
+	// start a go routine that will detect when a connection drops
 	go DetectClientDisconnection(&client)
 }
 
-// closeConn ------------------------------------------------------------------
-// closes the websocket connection associated with a given userid.
-// this will work well with a single egomonster instance, but for
-// multi-instances and assuming we have a way to target each instance
-// individually, we should send the same request to close a websocket
-// connection to all egomonster instances. This way, we are sure that
-// there will be at least one instance that will succeed.
+// CloseGroundStationClient ---------------------------------------------------
+// closes the websocket connection associated to a given clienttoken.
 // ----------------------------------------------------------------------------
-func closeConn(w http.ResponseWriter, r *http.Request) {
+func CloseGroundStationClient(w http.ResponseWriter, r *http.Request) {
 
 	clientToken := r.URL.Path[len("/ws/"):]
-	client, err := LaunchHUB.GetLaunchClient(clientToken)
+	client, err := LaunchHUB.GetTelemetryClient(clientToken)
 	if err != nil {
-		// this happens when a userid is not registered with this instance.
+		// this happens when a client is not registered with this instance.
 		// the same userid could be registered with another instance. The problem
 		// is that we don't know which one. THAT'S A MAJOR FLAW FOR CLOSECONN
 		fmt.Printf("CloseConn - %s\n", err.Error())
@@ -86,6 +81,8 @@ func setClientKey(ws *websocket.Conn, id string) string {
 
 
 // WriteLaunchTelemetry --------------------------------------------------------
+// streams the content of telemetry queue to client
+// -----------------------------------------------------------------------------
 func WriteLaunchTelemetry(client *CLIENT) {
 	var dp data.DataPoint
 	var err error
@@ -99,6 +96,9 @@ func WriteLaunchTelemetry(client *CLIENT) {
 }
 
 // DetectClientDisconnection --------------------------------------------------
+// handles disconnections by unregistering client from hub. The client will 
+// make a retry to reconnect and re-register with hub
+// ----------------------------------------------------------------------------
 func DetectClientDisconnection(client *CLIENT) {
 	// read connection (we ignore what is being received) until an error happens
 	ever := true
@@ -115,7 +115,7 @@ func DetectClientDisconnection(client *CLIENT) {
 }
 
 // serverHome -----------------------------------------------------------------
-// called on /stream endpoint. returns a template filled with a launchtoken
+// called on /stream endpoint. returns a template filled with a clientToken
 // ----------------------------------------------------------------------------
 func serveHome(page http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -170,10 +170,10 @@ func home(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Println("sending template")
+	//fmt.Println("sending template")
 	token := r.URL.Path[len("/stream/"):]
 
-	// the token can be used to authorize certain clients only
+	// the client token can be used to authorize certain clients only
 	if authorized(token) {
 
 		// Unmarshal settings into this struct

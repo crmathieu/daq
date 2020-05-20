@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-redis/redis"
-	"github.com/crmathieu/daq/data"
+	"github.com/crmathieu/daq/packages/data"
 	"os"
 	"time"
 	"strings"
@@ -40,10 +40,10 @@ const (
 	PUBSUB_CHANNEL = "DAQChannel"
 )
 
-//var Rclient *redis.Client
-
-// InitConfig------------------------------------------------------------------
-func InitConfig() bool {
+// InitGroundStation-----------------------------------------------------------
+// gets redis parameters from env variables if they exist -or- use default
+// ----------------------------------------------------------------------------
+func InitGroundStation() bool {
 
 	var env, redisenv string
 	var ok bool
@@ -66,11 +66,14 @@ func InitConfig() bool {
 		data.CInfo.RedisPass = DEF_REDIS_PWD
 		fmt.Printf("Fatal: environment variable DAQ_REDIS_DSN_"+env+" not found...")
 	}
-	return RedisInit()
+	return redisCheck()
 }
 
 
-func RedisInit() bool {
+// redisCheck -----------------------------------------------------------------
+// makes multiple attempts to connect to redis server to make sure it is ON
+// ----------------------------------------------------------------------------
+func redisCheck() bool {
 	const REDIS_RETRIES = 5
 	var err error
 	Rclient = redis.NewClient(&redis.Options{
@@ -94,7 +97,9 @@ func RedisInit() bool {
 	return true
 }
 
+// Publish ---------------------------------------------------------------------
+// places a payload to the redis PUBSUB channel for every subscriber to use
+// ----------------------------------------------------------------------------
 func Publish(Payload string) error {
-	fmt.Printf("PUBLISHING: %s\n", Payload)
 	return Rclient.Publish(PUBSUB_CHANNEL, Payload).Err()
 }

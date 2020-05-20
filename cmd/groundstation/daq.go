@@ -1,62 +1,47 @@
 package main
 
 import (
-//	"bufio"
-/*	"bytes"
-	"crypto/hmac"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
-	"github.com/nareix/joy4/utils/bits/pio"
-	"github.com/nareix/joy4/av"
-	"github.com/nareix/joy4/av/avutil"
-	"github.com/nareix/joy4/format/flv"
-	"github.com/nareix/joy4/format/flv/flvio"*/
 	"io" 
 	"net"
-	//"net/http"
-//	"github.com/gorilla/websocket"
-	"github.com/crmathieu/daq/packages/queue"
-	"github.com/crmathieu/daq/data"
-/*	"net/url"
-	"strings"*/
+	"github.com/crmathieu/daq/packages/streamer"
+	"github.com/crmathieu/daq/packages/data"
 	"time"
 	"fmt"
 	"unsafe"
 )
 
-type dacq struct {
+type daq struct {
 	Addr          	string
-//	HandlePublish func(*net.Conn)
-//	HandlePlay    func(*websocket.Conn)
-//	HandleConn    func(*websocket.Conn)	
 	VehicleProfile	string
-	iQue 			*queue.Queue
+	sQue 			*streamer.Queue
 }
 
-var DACQ *dacq 
+var DAQ *daq 
 
 // NewDaq ---------------------------------------------------------------------
 // creates a new Data Acquisition object
 // ----------------------------------------------------------------------------
-func NewDaq() *dacq {
-	return &dacq{
-		// create a queue for this downlink
-		iQue: queue.NewQueue(),
+func NewDaq() *daq {
+	return &daq{
+		// create a streamer for this downlink
+		sQue: streamer.NewQueue(),
 	}
 }
 
 // ListenAndServer ------------------------------------------------------------
 // listen to downlink connection and read packets
 // ----------------------------------------------------------------------------
-func (dacq *dacq) ListenAndServer() {
+func (daq *daq) ListenAndServer() {
 	// established downlink with launch vehicle
 	srv, err := net.Listen("tcp", data.DOWNLINK_SERVER)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
+	// set up telemetry hub
+	go LaunchHUB.AcceptClient()
+
 	fmt.Println("Ground Station Listening for downlink on", data.DOWNLINK_SERVER)
 
 	for {
@@ -65,14 +50,14 @@ func (dacq *dacq) ListenAndServer() {
 			fmt.Println(err)
 			return
 		}
-		go dacq.ReadDownlinkPackets(conn)
+		go daq.ReadDownlinkPackets(conn)
 	}
 }
 
 // ReadDownlinkPackets --------------------------------------------------------
 // reads one or more data packet from connection
 // ----------------------------------------------------------------------------
-func (dacq *dacq) ReadDownlinkPackets(c net.Conn) {
+func (daq *daq) ReadDownlinkPackets(c net.Conn) {
 	const MAXERROR = 5
 	start := time.Now()
     tbuf := make([]byte, 81920)
@@ -99,7 +84,7 @@ func (dacq *dacq) ReadDownlinkPackets(c net.Conn) {
 		}*/
 
 		//log.Println(tbuf[:n])
-		dacq.demuxDataPoints(&tbuf, n)
+		daq.demuxDataPoints(&tbuf, n)
 		totalBytes += n
 //		if n != 256 {
 //			log.Println(n)
@@ -112,14 +97,14 @@ func (dacq *dacq) ReadDownlinkPackets(c net.Conn) {
 
 // demuxDataPoints ------------------------------------------------------------
 // from the number of datapoints value found in the packet header, reads each
-// datapoint and save it in DAQ queue
+// datapoint and save it in DAQ streamer
 // ----------------------------------------------------------------------------  
-func (dacq *dacq) demuxDataPoints(pk *[]byte, size int) {
+func (daq *daq) demuxDataPoints(pk *[]byte, size int) {
 	numberDP := *(*byte)(unsafe.Pointer(&(*pk)[data.PACKET_NDP_OFFSET]))
 	for k:=byte(0); k<numberDP; k++ {
 		dp := (*data.DataPoint)(unsafe.Pointer(&(*pk)[data.PACKET_PAYLOAD_OFFSET+k*data.DATAPOINT_SIZE]))
-		dacq.iQue.WritePacket(*dp)
-//		dacq.viewPacket(dp)
+		daq.sQue.WritePacket(*dp)
+//		daq.viewPacket(dp)
 	}
 }
 
