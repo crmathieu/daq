@@ -76,7 +76,7 @@ func first_step() bool {
 	F9.Stages[BOOSTER].ay = F9.Stages[BOOSTER].ForceY / F9.Stages[BOOSTER].Mass
 
 	F9.Stages[BOOSTER].vAx = vE				// Absolute velocity in x-direction = velocity of earth at surface
-	F9.Stages[BOOSTER].vAy = F9.Stages[BOOSTER].vAy + (F9.Stages[BOOSTER].ay * dt/2)
+	F9.Stages[BOOSTER].vAy = F9.Stages[BOOSTER].vAy + (F9.Stages[BOOSTER].ay * F9.Stages[BOOSTER].dt/2)
 
 	F9.Stages[BOOSTER].PolarDistance = math.Sqrt(F9.Stages[BOOSTER].cx * F9.Stages[BOOSTER].cx + F9.Stages[BOOSTER].cy * F9.Stages[BOOSTER].cy)
 	F9.Stages[BOOSTER].Acc = math.Sqrt(F9.Stages[BOOSTER].ax * F9.Stages[BOOSTER].ax + F9.Stages[BOOSTER].ay * F9.Stages[BOOSTER].ay)
@@ -92,7 +92,7 @@ func leapfrog_step(i int32) { // i = stage
 
 
 	if _MEI1 {
-		dm = float64(F9.Stages[i].RunningEngines) * F9.Stages[i].ThrottleRate * 236 * dt;
+		dm = float64(F9.Stages[i].RunningEngines) * F9.Stages[i].ThrottleRate * 236 * F9.Stages[i].dt
 		F9.Stages[i].Mf = F9.Stages[i].Mf - dm;
 		F9.Stages[i].Mass = F9.Stages[i].Mass - dm;
 	}
@@ -104,18 +104,18 @@ func leapfrog_step(i int32) { // i = stage
 
 		/* x-direction	*/
 		F9.Stages[i].ForceX = F9.Stages[i].Thrust * math.Cos(F9.Stages[i].gam) + drag * math.Cos(F9.Stages[i].alpha + M_PI) + F9.Stages[i].Mass * g(F9.Stages[i].PolarDistance) * math.Cos(F9.Stages[i].beta + M_PI)
-		F9.Stages[i].cx = F9.Stages[i].cx + F9.Stages[i].vAx * dt
+		F9.Stages[i].cx = F9.Stages[i].cx + F9.Stages[i].vAx * F9.Stages[i].dt
 		F9.Stages[i].ax = F9.Stages[i].ForceX / F9.Stages[i].Mass
 
-		F9.Stages[i].vAx = F9.Stages[i].vAx + F9.Stages[i].ax * dt;
+		F9.Stages[i].vAx = F9.Stages[i].vAx + F9.Stages[i].ax * F9.Stages[i].dt
 		F9.Stages[i].vRx = F9.Stages[i].vAx - vE * math.Sin(F9.Stages[i].beta)
 
 		/* y-direction	*/
 		F9.Stages[i].ForceY = F9.Stages[i].Thrust * math.Sin(F9.Stages[i].gam) + drag * math.Sin(F9.Stages[i].alpha + M_PI) + F9.Stages[i].Mass * g(F9.Stages[i].PolarDistance) * math.Sin(F9.Stages[i].beta + M_PI)
-		F9.Stages[i].cy = F9.Stages[i].cy + F9.Stages[i].vAy * dt
+		F9.Stages[i].cy = F9.Stages[i].cy + F9.Stages[i].vAy * F9.Stages[i].dt
 		F9.Stages[i].ay = F9.Stages[i].ForceY / F9.Stages[i].Mass
 
-		F9.Stages[i].vAy = F9.Stages[i].vAy + F9.Stages[i].ay * dt
+		F9.Stages[i].vAy = F9.Stages[i].vAy + F9.Stages[i].ay * F9.Stages[i].dt
 		F9.Stages[i].vRy = F9.Stages[i].vAy - vE * math.Cos(M_PI + F9.Stages[i].beta)
 
 		F9.Stages[i].PolarDistance = math.Sqrt(F9.Stages[i].cx * F9.Stages[i].cx + F9.Stages[i].cy * F9.Stages[i].cy)
@@ -138,7 +138,7 @@ func leapfrog_step(i int32) { // i = stage
 	if _BBURN  || _LBURN {
 		flip(0)
 	}
-	if _LBURN && mod(F9.Stages[i].Clock, 5) < dt {
+	if _LBURN && mod(F9.Stages[i].Clock, 5) < F9.Stages[i].dt {
 		update_landing_throttle()
 	}
 }

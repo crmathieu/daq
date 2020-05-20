@@ -43,12 +43,12 @@ func main() {
 
 	for !orbit {
 		/*	Execute events		*/
-		for i := 0;i < len(*event); i++ {
-			if (*event)[i].Stage == BOOSTER && (math.Abs(F9.Stages[BOOSTER].Clock - (*event)[i].T) < dt/2) && !_MECO1 {	
+		for i := 0; i < len(*event); i++ {
+			if (*event)[i].Stage == BOOSTER && (math.Abs(F9.Stages[BOOSTER].Clock - (*event)[i].T) < F9.Stages[BOOSTER].dt/2) && !_MECO1 {	
 				// If an event in profile.txt occurs at this time, execute the event
 				execute((*event)[i].Id, nil) //f1)
 			}
-			if (*event)[i].Stage == STAGE2 && (math.Abs(F9.Stages[STAGE2].Clock - (*event)[i].T) < dt/2) { // stage 2 events
+			if (*event)[i].Stage == STAGE2 && (math.Abs(F9.Stages[STAGE2].Clock - (*event)[i].T) < F9.Stages[STAGE2].dt/2) { // stage 2 events
 				execute((*event)[i].Id, nil) //f1);
 			}
 		}
@@ -60,7 +60,7 @@ func main() {
 			_SECO1 = MSECO(1)
 			apogee = F9.Stages[STAGE2].PolarDistance
 			perigee = F9.Stages[STAGE2].PolarDistance
-			dt = 0.1
+			F9.Stages[STAGE2].dt = 0.1
 		}
 //		fmt.Println("SECO1 = ", _SECO1,", MECO1 = ",_MECO1)
 		/* 	Advance first stage	*/
@@ -77,7 +77,8 @@ func main() {
 			oldDRadius = newDRadius
 
 			newDRadius = F9.Stages[STAGE2].cx
-			fmt.Println("OLDradius = ", oldDRadius,", newDradius = ",newDRadius)
+//			fmt.Println(newDRadius)
+//			fmt.Println("OLDradius = ", oldDRadius,", newDradius = ",newDRadius)
 			if oldDRadius < 0 && newDRadius > 0 {
 				fmt.Println("Orbit!!!!")
 				orbit = true
@@ -93,12 +94,12 @@ func main() {
 			}
 		}
 
-		F9.Stages[BOOSTER].Clock = F9.Stages[BOOSTER].Clock + dt
-		F9.Stages[STAGE2].Clock = F9.Stages[STAGE2].Clock + dt
+		F9.Stages[BOOSTER].Clock = F9.Stages[BOOSTER].Clock + F9.Stages[BOOSTER].dt
+		F9.Stages[STAGE2].Clock = F9.Stages[STAGE2].Clock + F9.Stages[STAGE2].dt
 		//t = t + dt
 		//fmt.Println(t)
 	}
-
+	fmt.Println("BOOSTER-clk:",	F9.Stages[BOOSTER].Clock,", STAGE2 clk:", F9.Stages[STAGE2].Clock)
 	fmt.Printf("\nT%+07.2f\t%16.16s\t%.2f%s x %.2f%s\n", 
 		//t,
 		F9.Stages[STAGE2].Clock, 

@@ -33,6 +33,9 @@ func sync_stages() {
 	F9.Stages[STAGE2].alpha = F9.Stages[BOOSTER].alpha
 	F9.Stages[STAGE2].beta = F9.Stages[BOOSTER].beta
 	F9.Stages[STAGE2].gam = F9.Stages[BOOSTER].gam
+
+//	F9.Stages[STAGE2].Clock = F9.Stages[BOOSTER].Clock
+
 }
 
 func stage_sep() {

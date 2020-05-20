@@ -20,7 +20,7 @@ func throttle_test(hy, ux, uy, mf, throttle float64) float64 {
 
 	//do
 	for ;uy < 0; {
-		mf = mf - throttle * 236 * dt;
+		mf = mf - throttle * 236 * F9.Stages[BOOSTER].dt
 		mass = mf + F9.Stages[BOOSTER].Mr;						
 
 		fd = (0.5) * F9.Stages[BOOSTER].Cd * F9.Stages[BOOSTER].CSArea * rho(hy - Re) * VEL * VEL
@@ -29,12 +29,12 @@ func throttle_test(hy, ux, uy, mf, throttle float64) float64 {
 
 		fx = ft * math.Cos(F9.Stages[BOOSTER].gam) + fd * math.Cos(F9.Stages[BOOSTER].alpha + M_PI) + mass * g(hy) * math.Cos(F9.Stages[BOOSTER].beta + M_PI)
 		ax = fx / mass
-		ux = ux + ax * dt
+		ux = ux + ax * F9.Stages[BOOSTER].dt
 	
 		fy = ft * math.Sin(F9.Stages[BOOSTER].gam) + fd * math.Sin(F9.Stages[BOOSTER].alpha + M_PI) + mass * g(hy) * math.Sin(F9.Stages[BOOSTER].beta + M_PI)
-		hy = hy + uy * dt
+		hy = hy + uy * F9.Stages[BOOSTER].dt
 		ay = fy / mass
-		uy = uy + ay * dt
+		uy = uy + ay * F9.Stages[BOOSTER].dt
 
 		VEL = math.Sqrt((ux * ux) + (uy * uy))
 	}

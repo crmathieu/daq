@@ -34,7 +34,7 @@ func boosterGuidance() {
 		/*	Execute events		*/
 		//for(i=0;i<N;i++) {
 		for i := 0;i < len(*event); i++ {	
-			if (*event)[i].Stage == BOOSTER && math.Abs(F9.Stages[BOOSTER].Clock - (*event)[i].T) < dt/2	{ 
+			if (*event)[i].Stage == BOOSTER && math.Abs(F9.Stages[BOOSTER].Clock - (*event)[i].T) < F9.Stages[BOOSTER].dt/2	{ 
 				// If a booster event in profile.txt occurs at this time, execute the event
 				execute((*event)[i].Id, nil) //f1)
 			}
@@ -54,7 +54,7 @@ func boosterGuidance() {
 			if _release && F9.Stages[BOOSTER].PolarDistance < Re && !touchdown {			// If Alt = 0.0m
 				output_telemetry("Touchdown", nil, 0)
 				touchdown = true
-				dt = 0.1
+				F9.Stages[BOOSTER].dt = 0.1
 			} else {
 				// SECO1
 				if (F9.Stages[STAGE2].Mf < 5 || (F9.Stages[STAGE2].VAbsolute > math.Sqrt(G * Me/F9.Stages[STAGE2].PolarDistance))) && !_SECO1 {
@@ -77,7 +77,7 @@ func boosterGuidance() {
 		}
 
 		//t = t + dt
-		F9.Stages[BOOSTER].Clock = F9.Stages[BOOSTER].Clock + dt
+		F9.Stages[BOOSTER].Clock = F9.Stages[BOOSTER].Clock + F9.Stages[BOOSTER].dt
 
 	}
 	fmt.Println()

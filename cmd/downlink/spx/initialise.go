@@ -37,10 +37,11 @@ type Rocket struct {
 }
 
 type RocketStage struct {
-	Clock	float64
+	Clock	float64		// stage reference clock
+	dt 		float64		// time increment
 
 	// drag parameters
-	Cd		float64 // Coeff. of drag (I guessed this)
+	Cd		float64 // Coeff. of drag
 	CSArea  float64	// cross-sectional area
 	
 	// mass
@@ -103,7 +104,7 @@ var aerodynPressure float64 				// aero pressure
 var drag float64				// drag
 var dm float64 				// rate of fuel consumption
 //var t = float64(-10.0)		// time (initialized at -10sec)
-var dt = float64(0.001)		// time step
+//var dt = float64(0.001)		// time step
 
 var vE = float64(0.0)		// inclination (rads) = 28.49*M_PI/180;
 // vE = atoi(optarg)==0 ? 0 : 407.6614278; break; // Earth velocity at Cape Canaveral
@@ -111,9 +112,11 @@ var vE = float64(0.0)		// inclination (rads) = 28.49*M_PI/180;
 var F9 = Rocket {
 	//Clock: -10.0,
 	Stages: []RocketStage{
+		// booster
 		{	Clock:-10.0,			// clock is set at -10sec before launch
-			Cd:0.3, 		// booster
-			CSArea:10.52, 
+			dt: 0.001,				// time increment
+			Cd:0.3, 				// drag coefficient 
+			CSArea:10.52, 			// cross section area in m*m
 			Mr:20000, 
 			Mf:390000, 
 			Mp:0,
@@ -127,8 +130,10 @@ var F9 = Rocket {
 			beta: M_PI/2,
 			gam: M_PI/2,
 		}, 
+		// stage2
 		{	Clock: 0.0,
-			Cd:0.3, 		// stage 2
+			dt: 0.001,
+			Cd:0.3, 		
 			CSArea:10.52, 
 			Mr:4900, 
 			Mf:75700, 
