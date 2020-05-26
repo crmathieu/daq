@@ -1,5 +1,5 @@
 # The Physics of the rocket launch simulation
-I used the excellent Spx repo from Declan Murphy ([GitHub Pages](https://github.com/decmurphy/Spx)) as a base for creating the data generated during a rocket launch.
+I used the excellent [Spx](https://github.com/decmurphy/Spx) repo from Declan Murphy as a base for creating the data generated during a rocket launch.
 
 <img src="./referential-details.png">
 
