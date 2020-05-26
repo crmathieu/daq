@@ -29,9 +29,9 @@ type Queue struct {
 
 type QueueCursor struct {
 	que    *Queue
-	pos    BufPos
+	pos    BufIdx
 	gotpos bool
-	init   func(buf *quBuf, dpidx int) BufPos
+	init   func(buf *quBuf, dpidx int) BufIdx
 }
 
 func (que *Queue) newCursor() *QueueCursor {
@@ -66,7 +66,7 @@ func (que *Queue) Close() (err error) {
 }
 
 // WritePacket ----------------------------------------------------------------
-// Put packet into buffer, old packets will be discared
+// Put packet into buffer, old packets will be discarded
 // ----------------------------------------------------------------------------
 func (que *Queue) WritePacket(dp data.DataPoint) (err error) {
 	que.lock.Lock()
@@ -76,11 +76,12 @@ func (que *Queue) WritePacket(dp data.DataPoint) (err error) {
 	return
 }
 
-
-// Create cursor position at latest packet.
+// Latest ---------------------------------------------------------------------
+// Create cursor position at latest (most recent) packet
+// ----------------------------------------------------------------------------
 func (que *Queue) Latest() *QueueCursor {
 	cursor := que.newCursor()
-	cursor.init = func(buf *quBuf, dpidx int) BufPos {
+	cursor.init = func(buf *quBuf, dpidx int) BufIdx {
 		return buf.Tail
 	}
 	return cursor
@@ -91,7 +92,7 @@ func (que *Queue) Latest() *QueueCursor {
 // ----------------------------------------------------------------------------
 func (que *Queue) Oldest() *QueueCursor {
 	cursor := que.newCursor()
-	cursor.init = func(buf *quBuf, dpidx int) BufPos {
+	cursor.init = func(buf *quBuf, dpidx int) BufIdx {
 		return buf.Head
 	}
 	return cursor
@@ -100,30 +101,30 @@ func (que *Queue) Oldest() *QueueCursor {
 // ReadPacket -----------------------------------------------------------------
 // will not consume packets in Queue, it's just a cursor
 // ----------------------------------------------------------------------------
-func (self *QueueCursor) ReadPacket() (dp data.DataPoint, err error) {
-	self.que.cond.L.Lock()
-	buf := self.que.buf
-	if !self.gotpos {
-		self.pos = self.init(buf, self.que.dpidx)
-		self.gotpos = true
+func (qc *QueueCursor) ReadPacket() (dp data.DataPoint, err error) {
+	qc.que.cond.L.Lock()
+	buf := qc.que.buf
+	if !qc.gotpos {
+		qc.pos = qc.init(buf, qc.que.dpidx)
+		qc.gotpos = true
 	}
 	for {
-		if self.pos.LT(buf.Head) {
-			self.pos = buf.Head
-		} else if self.pos.GT(buf.Tail) {
-			self.pos = buf.Tail
+		if qc.pos.LT(buf.Head) {
+			qc.pos = buf.Head
+		} else if qc.pos.GT(buf.Tail) {
+			qc.pos = buf.Tail
 		}
-		if buf.IsValidPos(self.pos) {
-			dp = buf.Get(self.pos)
-			self.pos++
+		if buf.IsValidPos(qc.pos) {
+			dp = buf.Get(qc.pos)
+			qc.pos++
 			break
 		}
-		if self.que.closed {
+		if qc.que.closed {
 			err = io.EOF
 			break
 		}
-		self.que.cond.Wait()
+		qc.que.cond.Wait()
 	}
-	self.que.cond.L.Unlock()
+	qc.que.cond.L.Unlock()
 	return
 }

@@ -24,7 +24,8 @@ const(
 //	SENGINEPRE = 3
 	STILTANGLE_OFFSET = uint16(2)
 	STHRUST_OFFSET = uint16(3)
-	SMASSPROPELLANT_OFFSET = uint16(4)
+	SEVENT_OFFSET = uint16(4)
+	SMASSPROPELLANT_OFFSET = uint16(5)
 
 	INSTRUMENTS_COUNT = SMASSPROPELLANT_OFFSET + 1
 
@@ -41,7 +42,8 @@ const(
 //	SENGINEPRE = 3
 	IDTILTANGLE = uint32(3)
 	IDTHRUST = uint32(4)
-	IDMASSPROPELLANT = uint32(5)
+	IDEVENT = uint32(5)
+	IDMASSPROPELLANT = uint32(6)
 )   
 
 
@@ -51,22 +53,32 @@ type SENSvelocity struct {
 	Id    	 		uint32 //uint16
 	Velocity 		float32
 	Acceleration 	float32
-	Reserved 		[4]byte //[6]byte
+	Stage			uint32
+//	Reserved 		[4]byte //[6]byte
+}
+
+type SENSevent struct {
+	Id    		uint32
+	EventId 	uint32
+	Time 		float32
+	EventMap 	uint32
 }
 
 type SENSposition struct {
 	Id    		uint32 //uint16
 	Range 		float32
     Altitude 	float32
-	Inclinaison float32
+	//Inclinaison float32
+	Stage		uint32
 	//reserved	[2]byte
 }
 
 type SENStiltAngle struct {
 	Id   uint32 //uint16
-	Angle  float32
+	Alpha, Beta, Gamma float32
+/*	Angle  float32
 	RateOfChange float32
-	Reserved [4]byte //[6]byte
+	Reserved [4]byte //[6]byte */
 }
 
 type SENSthrust struct {
@@ -91,7 +103,8 @@ type SENSenginePressure struct {
 type SENSpropellantMass struct {
 	Id   	 uint32 //uint16
 	Mass   	 float32
-	Mejected float32
+	//Mejected float32
+	Stage	 uint32
 	Mflow	 float32
 	//reserved [2]byte
 }

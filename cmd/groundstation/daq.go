@@ -120,10 +120,11 @@ func viewPacket(dp *data.DataPoint) {
 								fmt.Println("Alt:", v.Altitude,"m, Range:", v.Range,"m")
 		case data.IDTHRUST:		v := (*data.SENSthrust)(unsafe.Pointer(dp))
 								fmt.Println("Thrust:", v.Thrust/1000,"kN, Stage:", v.Stage)
-		case data.IDTILTANGLE:	v := (*data.SENStiltAngle)(unsafe.Pointer(dp))
-								fmt.Println("Gamma:", v.Angle,"deg")
+//		case data.IDTILTANGLE:	v := (*data.SENStiltAngle)(unsafe.Pointer(dp))
+//								fmt.Println("Gamma:", v.Angle,"deg")
 		case data.IDMASSPROPELLANT:	v := (*data.SENSpropellantMass)(unsafe.Pointer(dp))
-								fmt.Println("Mass:", v.Mass,"kg, Mass Flow:", v.Mflow, "kg/s, Mass Ejected:", v.Mejected)
+								//fmt.Println("Mass:", v.Mass,"kg, Mass Flow:", v.Mflow, "kg/s, Mass Ejected:", v.Mejected)
+								fmt.Println("Mass:", v.Mass,"kg, Mass Flow:", v.Mflow, "kg/s, Stage:", v.Stage)
 
 		}
 
