@@ -11,14 +11,30 @@ To calculate these various quantities, we first need to determine what forces ar
 
 - x direction:
 ```text
-Horizontal drag component: - D * cos(alpha) - m * g * sin(beta) + T * cos(gamma)
+Fx = - D * cos(alpha) - m * g * sin(beta) + T * cos(gamma)
 Where 
 - D is the drag
 - m is the rocket mass
 - g is the acceleration of gravity at this altitude
 - T is the thrust
+```
+Note that all these parameters are a function of time. Also, the lift L has been ignored (which assumes that the Thrust follows the flight path). In other words gamma = alpha. 
 
-Note that all these parameters are a function of the altitude. Also, the lift has been ignored (which assumes that the Thrust follows the flight path. in other words gamma = alpha. 
+- y direction:
+```text
+Similarily
+Fy = - D * sin(alpha) - m * g * cos(beta) + T * sin(gamma)
+```
+Once the force components are known, The acceleration can be calculated:
+
+- Ax:
+```text
+Ax = Fx / m
+```
+
+- Ay:
+```text
+Ay = Fy / m
 ```
 
 SpX
