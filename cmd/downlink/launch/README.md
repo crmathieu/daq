@@ -7,6 +7,9 @@ The excellent [Spx](https://github.com/decmurphy/Spx) repo from Declan Murphy wa
 The rocket coordinates, velocity and acceleration are all calculated with respect to the fixed referential set at the launch location.
 
 ### Steps
+Knowing the initial conditions and the equations that determine the trajectory, we can calculate acceleration, velocity and position by injecting a time *_dt_* in each iteration of these calculations.
+
+### equations
 To calculate these various quantities, we first need to determine what forces are involved in the fixed referential x and y directions.
 
 - x direction:
@@ -20,9 +23,10 @@ Where
 ```
 Note that all these parameters are a function of time. Also, the lift L has been ignored (which assumes that the Thrust follows the flight path). In other words gamma = alpha. 
 
+
 - y direction:
 ```text
-Similarily
+Similarly
 Fy = - D * sin(alpha) - m * g * cos(beta) + T * sin(gamma)
 ```
 Once the force components are known, The acceleration can be calculated:
