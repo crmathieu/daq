@@ -21,7 +21,7 @@ Where
 - g is the acceleration of gravity at this altitude
 - T is the thrust
 ```
-Note that all these parameters are a function of time. Also, the lift L has been ignored (which assumes that the Thrust follows the flight path). In other words gamma = alpha. 
+Note that all these parameters are a function of time and will have to be calculated before being used in the equation. Also, the lift L has been ignored (which assumes that the Thrust follows the flight path). In other words gamma = alpha. 
 
 
 - y direction:

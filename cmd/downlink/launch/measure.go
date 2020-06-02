@@ -28,7 +28,7 @@ func (v *VEHICLE) readThrust() [data.DATAPOINT_SIZE]byte {	//interface{}  {
 func (v *VEHICLE) readVelocity(stage int32) [data.DATAPOINT_SIZE]byte {	//interface{}  {
 	p := (*data.SENSvelocity)(v.Instruments[data.SVELOCITY_OFFSET])
 	p.Velocity = float32((v.Stages[stage].VRelative)*1e-3) //float32(v.Velocity)
-	p.Acceleration = float32(v.Stages[stage].Acc)
+	p.Acceleration = float32(v.Stages[stage].Acc/g0)
 	p.Stage = uint32(stage)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
@@ -36,7 +36,7 @@ func (v *VEHICLE) readVelocity(stage int32) [data.DATAPOINT_SIZE]byte {	//interf
 func (v *VEHICLE) readPosition(stage int32) [data.DATAPOINT_SIZE]byte {	//interface{}  {
 	p := (*data.SENSposition)(v.Instruments[data.SPOSITION_OFFSET])
 	p.Range = float32((v.Stages[stage].cx)*1e-3) //float32(v.Range)
-	p.Altitude = float32((v.Stages[stage].cy - Re)*1e-3) //float32(v.Altitude)
+	p.Altitude = float32((v.Stages[stage].DTF - Re) * 1e-3)//float32((v.Stages[stage].cy - Re)*1e-3)
 	//p.Inclinaison = float32(0.0)
 	p.Stage = uint32(stage)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
@@ -59,42 +59,28 @@ func (v *VEHICLE) readEvent(stage int32) [data.DATAPOINT_SIZE]byte {
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
 
+func (v *VEHICLE) readTime(stage int32) [data.DATAPOINT_SIZE]byte {
+	p := (*data.SENStime)(v.Instruments[data.STIME_OFFSET])
+	p.Time = float32(v.Stages[stage].Clock)
+	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
+}
+
 // ReadInstruments ------------------------------------------------------------
-// this is called as a goroutine to perform updates
+// GOROUTINE - performs instruments reading
 // returns:
 //	- the number of datapoints measured
 //	- the size of the data 
 //	- the index of the next instrument to measure in the list of instruments
+//  - the stage of the next instrument to measure in the list of instruments
 // ----------------------------------------------------------------------------
-/*func (v *VEHICLE)ReadInstrumentsXX(pOut []byte, capacity, index int) (byte, int, int) { 
-	var cur =  0
-	var ndp = byte(0)
-	var k = index
-	max := len(v.Instruments)
-	for {
-		if v.Handlers[k].ReadSensor != nil {
-			payload 	:= v.Handlers[k].ReadSensor() //SensorsMap[sensorIndexList[k]].ReadSensor()
-			n 			:= copy((pOut)[cur:], payload[:])
-			cur 		= cur + n 
-			ndp++
-		}
-		k = (k + 1) % max
-		if capacity - data.DATAPOINT_SIZE < cur {
-			return ndp, cur, k
-		}
-	}
-	return ndp, cur, k  // returns #of datapoints, current offset in payload, current index in sensors
-}*/
-
 func (v *VEHICLE)ReadInstruments(pOut []byte, capacity, index int, stage int) (byte, int, int, int) { 
 	var cur =  0
 	var ndp = byte(0)
 	var k = index
-//	max := len(v.Stage[v.CurrentStage].Instruments)
 	max := len(v.Instruments)
 	for {
 		if v.Handlers[k].ReadSensor != nil {
-			payload 	:= v.Handlers[k].ReadSensor(int32(stage)) //SensorsMap[sensorIndexList[k]].ReadSensor()
+			payload 	:= v.Handlers[k].ReadSensor(int32(stage))
 			n 			:= copy((pOut)[cur:], payload[:])
 			cur 		= cur + n 
 			ndp++
@@ -104,14 +90,13 @@ func (v *VEHICLE)ReadInstruments(pOut []byte, capacity, index int, stage int) (b
 		}
 		k = (k + 1) % max
 		if capacity - data.DATAPOINT_SIZE < cur {
-			return ndp, cur, k, stage
+			return ndp, cur, k, stage // returns #of datapoints, current offset in payload, current index in sensors
 		}
 	}
-	return ndp, cur, k, stage  // returns #of datapoints, current offset in payload, current index in sensors
 }
 
 // StreamData -----------------------------------------------------------------
-// loops in taking instruments measurement and stream readings
+// Instruments reading and streaming infinite loop. Paused every 10 millisec
 // ----------------------------------------------------------------------------
 func (v *VEHICLE) StreamData(c net.Conn) {
 

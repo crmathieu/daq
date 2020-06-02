@@ -4,10 +4,14 @@ import (
 )
 
 func mod(a, b float64) float64 {
-	if a < b {
+	for a >= b {
+		a = a - b
+	}
+	return a
+	/*	if a < b {
 		return a
 	}
-	return mod(a - b, b)
+	return mod(a - b, b)*/
 }
 
 func g(h float64) float64 {
@@ -43,7 +47,8 @@ func (v *VEHICLE) Isp(h float64) float64 {
 
 func (v *VEHICLE) GetThrust(H float64, stage int32) float64 {
 	if stage == BOOSTER || !v.SysGuidance._MECO1 {
-		return v.Isp(H - Re) * 236 * g0	// 236 kg/s = M1D rate of fuel consumption
+//		return v.Isp(H - Re) * 236 * g0	// 236 kg/s = M1D rate of fuel consumption
+		return v.Isp(H - Re) * EnginesMap[v.Stages[BOOSTER].EngineID].Flow_rate * g0
 	} 
 	return EnginesMap[v.Stages[STAGE2].EngineID].Th_vac    //M1Dv.Th_vac
 }

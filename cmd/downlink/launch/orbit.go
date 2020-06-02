@@ -61,11 +61,13 @@ func (v *VEHICLE) launch() {
 					if (*event)[i].Stage == BOOSTER && (math.Abs(v.Stages[BOOSTER].Clock - (*event)[i].T) < v.Stages[BOOSTER].dt/2) && !v.hasEvent(data.E_STAGESEP) { //v.SysGuidance._stagesep {	
 						// If an event in profile.txt occurs at this time, execute the event
 						fmt.Println("booster event (delta = ",math.Abs(v.Stages[STAGE2].Clock - (*event)[i].T),"), inc=",v.Stages[BOOSTER].dt/2)
-						v.execute((*event)[i].Id, nil) //f1)
+						//v.execute((*event)[i].Id, nil) //f1)
+						v.execute((*event)[i]) //f1)
 					}
 					if (*event)[i].Stage == STAGE2 && (math.Abs(v.Stages[STAGE2].Clock - (*event)[i].T) < v.Stages[STAGE2].dt/2) { // stage 2 events
 						fmt.Println("second stage event (delta = ",math.Abs(v.Stages[STAGE2].Clock - (*event)[i].T),"), inc=",v.Stages[BOOSTER].dt/2)
-						v.execute((*event)[i].Id, nil) //f1);
+//						v.execute((*event)[i].Id, nil) //f1);
+						v.execute((*event)[i]) //f1);
 					}
 				}
 				
@@ -186,10 +188,10 @@ func (v *VEHICLE) launch2() {
 		for i := 0; i < len(*event); i++ {
 			if (*event)[i].Stage == BOOSTER && (math.Abs(v.Stages[BOOSTER].Clock - (*event)[i].T) < v.Stages[BOOSTER].dt/2) && !v.SysGuidance._MECO1 {	
 				// If an event in profile.txt occurs at this time, execute the event
-				v.execute((*event)[i].Id, nil) //f1)
+//				v.execute((*event)[i].Id, nil) //f1)
 			}
 			if (*event)[i].Stage == STAGE2 && (math.Abs(v.Stages[STAGE2].Clock - (*event)[i].T) < v.Stages[STAGE2].dt/2) { // stage 2 events
-				v.execute((*event)[i].Id, nil) //f1);
+//				v.execute((*event)[i].Id, nil) //f1);
 			}
 		}
 
@@ -257,11 +259,11 @@ func (v *VEHICLE) CheckGuidanceEvents(event *[]Event) {
 		if (*event)[i].Stage == BOOSTER && (math.Abs(v.Stages[BOOSTER].Clock - (*event)[i].T) < v.Stages[BOOSTER].dt/2) && !v.SysGuidance._stagesep {	
 			// If an event in profile.txt occurs at this time, execute the event
 			fmt.Println("booster event")
-			v.execute((*event)[i].Id, nil) //f1)
+			v.execute((*event)[i]) //f1)
 		}
 		if (*event)[i].Stage == STAGE2 && (math.Abs(v.Stages[STAGE2].Clock - (*event)[i].T) < v.Stages[STAGE2].dt/2) { // stage 2 events
 			fmt.Println("second stage event")
-			v.execute((*event)[i].Id, nil) //f1);
+			v.execute((*event)[i]) //f1);
 		}
 	}
 

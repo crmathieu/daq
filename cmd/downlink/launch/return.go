@@ -43,7 +43,8 @@ func (v *VEHICLE) boosterGuidance() {
 				if (*event)[i].Stage == BOOSTER && math.Abs(v.Stages[BOOSTER].Clock - (*event)[i].T) < v.Stages[BOOSTER].dt/2	{ 
 					// If a booster event in profile.txt occurs at this time, execute the event
 					fmt.Println("returning booster event")
-					v.execute((*event)[i].Id, nil) //f1)
+//					v.execute((*event)[i].Id, nil) //f1)
+					v.execute((*event)[i]) //f1)
 				}
 				/*if (*event)[i].Stage == 1 && math.Abs(v.Stages[BOOSTER].Clock - (*event)[i].T) < dt/2	{
 					// Stage2 events
@@ -54,7 +55,7 @@ func (v *VEHICLE) boosterGuidance() {
 			/*	End Landing Burn	*/
 			if (v.Stages[BOOSTER].Mf < 5 || (v.SysGuidance._LBURN && v.Stages[BOOSTER].DTF - Re < 0.01)) && !v.SysGuidance._MECO3 {
 				//output_telemetry("MECO-3", nil, 0) //f1, 0)
-				v.SysGuidance._MECO3 = v.MSECO(0, data.E_LBURNCO) //data.E_MECO_3) //, &_MECO3);
+				v.SysGuidance._MECO3 = v.MSECO(0, data.E_LBURNO) //data.E_MECO_3) //, &_MECO3);
 				v.SysGuidance._LBURN = false
 				fmt.Println("\t",v.Stages[0].Clock,"--> Landing burn stopped!!! distance to ground:", v.Stages[BOOSTER].DTF - Re, ", remaoning fuel:",v.Stages[BOOSTER].Mf)
 
@@ -89,6 +90,6 @@ func (v *VEHICLE) boosterGuidance() {
 			v.Stages[BOOSTER].Clock = v.Stages[BOOSTER].Clock + v.Stages[BOOSTER].dt
 		}
 	}
-	fmt.Println("TOUCHDOWN!!!!!!!!!!!!!")
+	fmt.Println("TOUCHDOWN!!!!!!!!!!!!!", v.Stages[BOOSTER].Clock)
 	//os.Exit(1)
 }

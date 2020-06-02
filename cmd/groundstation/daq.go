@@ -100,12 +100,24 @@ func (daq *daq) ReadDownlinkPackets(c net.Conn) {
 // datapoint and save it in DAQ streamer
 // ----------------------------------------------------------------------------  
 func (daq *daq) demuxDataPoints(pk *[]byte, size int) {
+
 	numberDP := *(*byte)(unsafe.Pointer(&(*pk)[data.PACKET_NDP_OFFSET]))
-	for k:=byte(0); k<numberDP; k++ {
-		dp := (*data.DataPoint)(unsafe.Pointer(&(*pk)[data.PACKET_PAYLOAD_OFFSET+k*data.DATAPOINT_SIZE]))
-		daq.sQue.WritePacket(*dp)
-//		daq.viewPacket(dp)
+
+	// calculate checksum on datapoints 
+	if data.CRC32(0, (*pk)[data.PACKET_PAYLOAD_OFFSET:], int(numberDP) * data.DATAPOINT_SIZE) == *(*uint32)(unsafe.Pointer(&(*pk)[data.PACKET_CRC_OFFSET])) {
+		for k:=byte(0); k<numberDP; k++ {
+			dp := (*data.DataPoint)(unsafe.Pointer(&(*pk)[data.PACKET_PAYLOAD_OFFSET+k*data.DATAPOINT_SIZE]))
+			daq.sQue.WritePacket(*dp)
+	//		daq.viewPacket(dp)
+		}
+		// add time packet DOESN"T WORK !!!!
+//		dp := &data.SENStime{Id:data.IDTIME, Time:*(*float32)(unsafe.Pointer(&(*pk)[data.PACKET_TT_OFFSET])),} 
+//		daq.sQue.WritePacket(*(*data.DataPoint)((unsafe.Pointer)(dp)))
+
+	} else {
+		fmt.Println("CRC error encountered...")
 	}
+
 }
 
 // viewPacket -----------------------------------------------------------------

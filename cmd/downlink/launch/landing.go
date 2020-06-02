@@ -27,7 +27,8 @@ func (r *VEHICLE) throttle_test(throttle float64) float64 {
 
 	//do
 	for ;uy < 0; {
-		mf = mf - throttle * 236 * r.Stages[BOOSTER].dt
+		//mf = mf - throttle * 236 * r.Stages[BOOSTER].dt
+		mf = mf - throttle * EnginesMap[r.Stages[BOOSTER].EngineID].Flow_rate * r.Stages[BOOSTER].dt
 		mass = mf + r.Stages[BOOSTER].Mr;						
 
 		fd = (0.5) * r.Stages[BOOSTER].Cd * r.Stages[BOOSTER].CSArea * rho(hy - Re) * VEL * VEL

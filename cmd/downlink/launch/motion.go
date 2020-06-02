@@ -4,17 +4,6 @@ import (
 	"github.com/crmathieu/daq/packages/data"
 )
 
-//inline void pitchStart(int *x)
-//func pitchStart(x *int32) {
-//	gamma[0] = (M_PI / 2) - 0.025;
-//	*x = 1;
-//}
-func (r *VEHICLE) pitchStart() bool {
-	r.Stages[BOOSTER].gamma = (M_PI / 2) - 0.025
-	r.EventsMap = r.EventsMap | data.E_STARTPITCH
-	r.LastEvent = data.E_STARTPITCH
-	return true
-}
 
 //inline void angles(int i)
 func (r *VEHICLE) angles(i int32) {
@@ -51,9 +40,10 @@ func (r *VEHICLE) grav_turn(i int32) {
 	The next few lines are OG2 course corrections
 	Trial and error. Lots of corrections for ultra steep trajectory.
 */
-	if r.Stages[STAGE2].VRelative > 2200 {
-		r.Stages[STAGE2].ThrottleRate = 0.7				// Throttle down to 70%
-	}
+
+//	if r.Stages[STAGE2].VRelative > 2200 {
+//		r.Stages[STAGE2].ThrottleRate = 0.7				// Throttle down to 70%
+//	}
 	if r.Stages[STAGE2].VRelative > 2900 {
 		r.Stages[STAGE2].gamma = r.Stages[STAGE2].beta - M_PI/2			// go horizontal rel. to earth
 	}
@@ -63,12 +53,12 @@ func (r *VEHICLE) grav_turn(i int32) {
 	if r.Stages[STAGE2].VRelative > 3900 {
 		r.Stages[STAGE2].gamma = r.Stages[STAGE2].beta - M_PI/2 - 0.2
 	}
-	if r.Stages[STAGE2].VRelative > 4400 {
+/*	if r.Stages[STAGE2].VRelative > 4400 {
 		r.Stages[STAGE2].gamma = r.Stages[STAGE2].beta - M_PI/2 - 0.3
 	}
 	if r.Stages[STAGE2].VRelative > 6200 {
 		r.Stages[STAGE2].gamma = r.Stages[STAGE2].beta - M_PI/2 - 0.4
-	}
+	}*/
 }
 
 //inline void liftOff()
@@ -97,9 +87,9 @@ func (r *VEHICLE) liftOff() bool {
 //void timeStep(int i) // i = stage
 func (r *VEHICLE) timeStep(i int32) { // i = stage
 
-
 	if r.SysGuidance._MEI1 {
-		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * 236 * r.Stages[i].dt
+//		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * 236 * r.Stages[i].dt
+		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * EnginesMap[r.Stages[i].EngineID].Flow_rate * r.Stages[i].dt
 		r.Stages[i].Mf = r.Stages[i].Mf - dm;
 		r.Stages[i].Mass = r.Stages[i].Mass - dm;
 	}

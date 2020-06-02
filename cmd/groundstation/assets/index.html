@@ -14,12 +14,12 @@
     gtag('js', new Date());
     gtag('config', 'UA-109828050-2');
   </script -->
-  <script type="text/javascript" src="../js/events.js?2"></script>
-  <script type="text/javascript" src="../js/trajectory.js?13"></script>
+  <script type="text/javascript" src="../js/events.js?7"></script>
+  <script type="text/javascript" src="../js/trajectory.js?23"></script>
 </head>
 
-<body onload="draw();">
-
+<!-- body onload="draw();" -->
+<body>
   <!-- audio id="audio">
     <source src="/media/success.wav" type="audio/wav">
     Sorry! Your browser does not support the audio element.
@@ -30,11 +30,12 @@
   </div>
   
   <div style="width:200px;display:inline-block;">
+    Time: <div id="time"></div><br>
     <div>BOOSTER</div>
-    Velocity: <div id="Velocity_0"></div>
+    Velocity (km/h): <div id="Velocity_0"></div>
     Accelera:<div id="Acceleration_0"></div>
-    Range: <div id="Range_0"></div>
-    Altitude: <div id="Altitude_0"></div>
+    Range (km): <div id="Range_0"></div>
+    Altitude (km): <div id="Altitude_0"></div>
 <!--    Inclination: <div id="Inclination"></div>
     Angle: <div id="Angle"></div>
     ROC: <div id="RateOfChange"></div>
@@ -44,10 +45,10 @@
     X: <div id="X"></div>
     Y: <div id="Y"></div -->
     <br><div>STAGE-2</div>
-    Velocity: <div id="Velocity_1"></div>
+    Velocity (km/h): <div id="Velocity_1"></div>
     Accelera:<div id="Acceleration_1"></div>
-    Range: <div id="Range_1"></div>
-    Altitude: <div id="Altitude_1"></div>
+    Range (km): <div id="Range_1"></div>
+    Altitude (km): <div id="Altitude_1"></div>
     <br>
 <!--    X: <div id="X"></div>
     Y: <div id="Y"></div -->
@@ -78,6 +79,8 @@
     //const giftDelay = 1000;
 
     var eventHist = 0;
+    var nsec = 0;
+    var timeHist = -20;
     var initStage2Position = false;
     var timerId = 0;
     var restartId = 0;
@@ -130,6 +133,9 @@
 
       conn = new WebSocket(websocketServerAddr);
       conn.binaryType = 'arraybuffer';
+      draw();
+      boosterPos.setScale();
+      stage2Pos.setScale();
 
       //-----------------------------------------------------------------------
       conn.onopen = function(evt) {
@@ -142,35 +148,6 @@
       };
 
       //---------------------------------------------WebSocket--------------------------
-        conn.onmessagebis = function (evt) {
-          //let buffer = new ArrayBuffer(evt.data.length);
-          //let dataView = new DataView(evt.data)
-          let idView = new Uint16Array(evt.data, 0, 1);
-          switch (idView[0]) {
-          //let littleEndian = !bigEndian
-          //var packetType = dataView.getUint16(0, littleEndian)
-          //switch (packetType) {
-            case 1: // velocity
-              //let velocityView = new Float32Array(evt.data, 2, 2);
-              let velView = new Float32Array(evt.data, 4, 2);
-              
-              document.getElementById("Velocity").innerHTML = String(velView[0]); //velocityView[0];
-              document.getElementById("Acceleration").innerHTML = String(velView[1]); //velocityView[1];
-              console.log(evt.data);
-              break;
-          }
-
-          //var jsonData = JSON.parse(evt.data)
-          //        console.log(evt.data);
-          //giftText.innerHTML = jsonData.username;
-          //        var num = parseFloat(jsonData.gifts[0].amount);
-          //giftAmount.innerHTML = num.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-          //gift.src = jsonData.gifts[0].asset;
-          //        clearTimeout(timerId);
-          //      timerId = setTimeout(keepAlive, timeout, conn);
-
-        };
-
       conn.onmessage = function(evt) {
         //let buffer = new ArrayBuffer(evt.data.length);
         let dataView = new DataView(evt.data)
@@ -183,8 +160,8 @@
               //let velocityView = new Float32Array(evt.data, 2, 2);
               var stage = dataView.getInt32(12, littleEndian).toString();
               //document.getElementById("Stage").innerHTML = dataView.getInt32(12, littleEndian).toString(); 
-              document.getElementById("Velocity_"+stage).innerHTML = dataView.getFloat32(4, littleEndian).toString(); //velocityView[0];
-              document.getElementById("Acceleration_"+stage).innerHTML = dataView.getFloat32(8, littleEndian).toString(); //velocityView[1];
+              document.getElementById("Velocity_"+stage).innerHTML = (dataView.getFloat32(4, littleEndian) * 3600).toFixed(2); //velocityView[0];
+              document.getElementById("Acceleration_"+stage).innerHTML = dataView.getFloat32(8, littleEndian).toFixed(2); //velocityView[1];
               console.log(evt.data);
               break;
 
@@ -192,8 +169,8 @@
             var stage = dataView.getInt32(12, littleEndian).toString();
 
             //let positionView = new Float32Array(evt.data, 2, 3);
-            document.getElementById("Range_"+stage).innerHTML = dataView.getFloat32(4, littleEndian); //positionView[0];
-            document.getElementById("Altitude_"+stage).innerHTML = dataView.getFloat32(8, littleEndian); //positionView[1];
+            document.getElementById("Range_"+stage).innerHTML = dataView.getFloat32(4, littleEndian).toFixed(2); //positionView[0];
+            document.getElementById("Altitude_"+stage).innerHTML = dataView.getFloat32(8, littleEndian).toFixed(2); //positionView[1];
             //document.getElementById("Inclination").innerHTML = dataView.getFloat32(12, littleEndian); //positionView[2];
             if (stage == 0) {
               boosterPos.plot(ctx, axis, "red", 3, dataView.getFloat32(4, littleEndian), dataView.getFloat32(8, littleEndian));
@@ -201,12 +178,25 @@
               stage2Pos.plot(ctx, axis, "green", 3, dataView.getFloat32(4, littleEndian), dataView.getFloat32(8, littleEndian));
             }
             break;
+          case IDTIME:
+            var time = dataView.getFloat32(4, littleEndian);
+            nsec = Math.round(time);
+            if (nsec > timeHist) {
+/*              var min = Math.round(nsec / 60);
+              var hou = Math.round(min / 60);
+              min = min - hou * 60;
+              var sec = nsec % 60;
+              document.getElementById("time").innerHTML = outputDate(hou, min, sec);*/ 
+              document.getElementById("time").innerHTML = new Date(nsec * 1000).toISOString().substr(11, 8) + " (" + nsec.toString() + ")";
+              timeHist = nsec;
+            } 
+            break;
 
           case IDEVENT: 
             var eventID = dataView.getInt32(4, littleEndian);
             eventHist = dataView.getInt32(12, littleEndian);
             if (lastEvent != eventID) {
-              document.getElementById("EventsList").innerHTML += "<br>"+eventMap.get(eventID);
+              document.getElementById("EventsList").innerHTML += "<br>"+eventMap.get(eventID) + " (" + nsec + ")";
               lastEvent = eventID;
             }
             if ((eventHist & E_STAGESEP) && !initStage2Position ) {

@@ -25,6 +25,7 @@ type Event struct {
 	Id 		string	`yaml:"id"`
 	T		float64	`yaml:"time"`
 	Stage	int8	`yaml:"stage"`
+	Rate    int8    `yaml:"rate,omitempty"`
 } 
 
 var profile Profile
@@ -112,7 +113,7 @@ type Engine struct {
 	Th_sl				float64 	// Sea level Thrust
 	Th_vac 				float64		// Vacuum Thrust
 	Min_ThrottleRate 	float64  
-
+	Flow_rate 			float64     // fuel flow rate (kg/s)
 }
 
 var aerodynPressure float64 				// aero pressure
@@ -174,6 +175,7 @@ var EnginesMap = map[string]Engine{
 		Th_sl: 650000, 
 		Th_vac: 720000,
 		Min_ThrottleRate: 0.40,
+		Flow_rate: 235.4,
 	},
 	"M1Dv": Engine{
 		Isp_sl:0, 
@@ -181,6 +183,7 @@ var EnginesMap = map[string]Engine{
 		Th_sl:0, 
 		Th_vac: 801000,
 		Min_ThrottleRate: 0.39,
+		Flow_rate: 235.4,
 	},
 	"M1DB5": Engine{
 		Isp_sl:282, 
@@ -188,6 +191,8 @@ var EnginesMap = map[string]Engine{
 		Th_sl: 854000, // from wikipedia --650000, 
 		Th_vac: 981000, // from wikipedia --720000,
 		Min_ThrottleRate: 0.40,
+		Flow_rate: 235.4, // unsure
+
 	},
 	"M1DvB5": Engine{
 		Isp_sl:0, 
@@ -195,6 +200,7 @@ var EnginesMap = map[string]Engine{
 		Th_sl:0, 
 		Th_vac:948000, // from wikipedia --801000,
 		Min_ThrottleRate: 0.39,
+		Flow_rate: 235.4, // unsure
 	},
 } 
 
@@ -223,7 +229,7 @@ func (r *VEHICLE) InitGuidance() *[]Event {
 	r.Stages[BOOSTER].Mass = r.Stages[BOOSTER].Mr + r.Stages[STAGE2].Mr + r.Stages[BOOSTER].Mf + r.Stages[STAGE2].Mf + r.Stages[STAGE2].Mp;
 	r.Stages[STAGE2].Mass = r.Stages[BOOSTER].Mr + r.Stages[STAGE2].Mr + r.Stages[BOOSTER].Mf + r.Stages[STAGE2].Mf + r.Stages[STAGE2].Mp;
 
-	file := "profile.yml"
+	file := "dm2.yml" //"profile.yml"
 	filepath := "./profiles/" + file
 	if _, err := os.Stat(filepath); err == nil {
 		// file exists
@@ -254,6 +260,7 @@ func (v *VEHICLE) initInstruments() {
 	v.Instruments[data.SVELOCITY_OFFSET]		= (unsafe.Pointer)(&data.SENSvelocity{		Id:data.IDVELOCITY, 	Velocity:0.0, Acceleration:0.0, Stage:0,})
 	v.Instruments[data.SPOSITION_OFFSET]		= (unsafe.Pointer)(&data.SENSposition{		Id:data.IDPOSITION, 	Range:0.0,    Stage:0, Altitude:0.0,})
 	v.Instruments[data.SEVENT_OFFSET]			= (unsafe.Pointer)(&data.SENSevent{			Id:data.IDEVENT, 		EventId:0,    Time:0, })
+	v.Instruments[data.STIME_OFFSET]			= (unsafe.Pointer)(&data.SENStime{			Id:data.IDTIME, 		Time:0, })
 	//v.Instruments[data.STILTANGLE_OFFSET]		= (unsafe.Pointer)(&data.SENStiltAngle{		Id:data.IDTILTANGLE, Angle:0,})
 	//v.Instruments[data.STHRUST_OFFSET]			= (unsafe.Pointer)(&data.SENSthrust{		Id:data.IDTHRUST, Thrust:0,})
 	//v.Instruments[data.SMASSPROPELLANT_OFFSET]	= (unsafe.Pointer)(&data.SENSpropellantMass{Id:data.IDMASSPROPELLANT, Mflow: 0.0, Mass: 0.0,})
@@ -261,6 +268,7 @@ func (v *VEHICLE) initInstruments() {
 	v.Handlers[data.SVELOCITY_OFFSET]		= SensorHandlers{ReadSensor: v.readVelocity,}
 	v.Handlers[data.SPOSITION_OFFSET]		= SensorHandlers{ReadSensor: v.readPosition, }
 	v.Handlers[data.SEVENT_OFFSET]			= SensorHandlers{ReadSensor: v.readEvent,}
+	v.Handlers[data.STIME_OFFSET]			= SensorHandlers{ReadSensor: v.readTime,}
 	v.Handlers[data.STILTANGLE_OFFSET]		= SensorHandlers{ReadSensor: nil,} //v.readTiltAngle,}
 	v.Handlers[data.STHRUST_OFFSET]			= SensorHandlers{ReadSensor: nil,} //v.readThrust,}
 	v.Handlers[data.SMASSPROPELLANT_OFFSET]	= SensorHandlers{ReadSensor: nil,} //v.readPropellantMass, }
@@ -280,8 +288,8 @@ func NewVehicle() *VEHICLE {
 			Mf:390000, 
 			Mp:0,
 			RunningEngines:0,
-			EngineID: "M1D",
-			ThrottleRate: 0.0,
+			EngineID: "M1DB5",
+			ThrottleRate: 1.0,
 			Thrust: 0.0,
 			ForceX: 0.0,
 			ForceY: 0.0,
@@ -298,8 +306,8 @@ func NewVehicle() *VEHICLE {
 			Mf:75700, 
 			Mp:1200,
 			RunningEngines:0,
-			EngineID: "M1Dv",
-			ThrottleRate: 0.0,
+			EngineID: "M1DvB5",
+			ThrottleRate: 1.0,
 			Thrust: 0.0,
 			ForceX: 0.0,
 			ForceY: 0.0,

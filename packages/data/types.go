@@ -26,8 +26,9 @@ const(
 	STHRUST_OFFSET = uint16(3)
 	SEVENT_OFFSET = uint16(4)
 	SMASSPROPELLANT_OFFSET = uint16(5)
+	STIME_OFFSET = uint16(6)
 
-	INSTRUMENTS_COUNT = SMASSPROPELLANT_OFFSET + 1
+	INSTRUMENTS_COUNT = STIME_OFFSET + 1
 
 	// Rocket constants
 	//DRYWEIGHT = 15000
@@ -44,6 +45,7 @@ const(
 	IDTHRUST = uint32(4)
 	IDEVENT = uint32(5)
 	IDMASSPROPELLANT = uint32(6)
+	IDTIME = uint32(7)
 )   
 
 
@@ -62,6 +64,17 @@ type SENSevent struct {
 	EventId 	uint32
 	Time 		float32
 	EventMap 	uint32
+}
+
+type SENStime struct {
+	Id    		uint32
+	Time 		float32
+	reserved 	[8]byte
+}
+
+type SENStimestamp struct {
+	Id    		uint64
+	TT 			float64
 }
 
 type SENSposition struct {
