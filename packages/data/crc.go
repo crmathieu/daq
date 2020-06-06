@@ -1,5 +1,5 @@
 package data
-import "fmt"
+
 var ieeeCrc32Tbl = []uint32{
 	0x00000000, 0xB71DC104, 0x6E3B8209, 0xD926430D, 0xDC760413, 0x6B6BC517,
 	0xB24D861A, 0x0550471E, 0xB8ED0826, 0x0FF0C922, 0xD6D68A2F, 0x61CB4B2B,
@@ -44,22 +44,6 @@ var ieeeCrc32Tbl = []uint32{
 	0x09FDB889, 0xBEE0798D, 0x67C63A80, 0xD0DBFB84, 0xD58BBC9A, 0x62967D9E,
 	0xBBB03E93, 0x0CADFF97, 0xB110B0AF, 0x060D71AB, 0xDF2B32A6, 0x6836F3A2,
 	0x6D66B4BC, 0xDA7B75B8, 0x035D36B5, 0xB440F7B1, 0x00000001,
-}
-
-func CRC32SAVE(crc uint32, data *[]byte) uint32 {
-	for _, b := range *data {
-		crc = ieeeCrc32Tbl[b^byte(crc)] ^ (crc >> 8)
-	}
-	return crc
-}
-
-func CRC32BIS(crc uint32, data *[]byte, size int) uint32 { 
-	fmt.Println("\n",(*data)[:])
-	for k := 0; k < size; k++ {
-		fmt.Println(k, size)
-		crc = ieeeCrc32Tbl[(*data)[k]^byte(crc)] ^ (crc >> 8)
-	}
-	return crc
 }
 
 func CRC32(crc uint32, data []byte, size int) uint32 { 
