@@ -7,31 +7,31 @@ import (
 const DataPointCount = 256
 
 type quBuf struct {
-	Head, Tail BufPos
+	Head, Tail BufIdx
 	pkts       []data.DataPoint
 	Size       int
 	Count      int
 }
 
-type BufPos int
+type BufIdx int
 
-func (b *quBuf) Get(pos BufPos) data.DataPoint {
+func (b *quBuf) Get(pos BufIdx) data.DataPoint {
 	return b.pkts[int(pos)&(len(b.pkts)-1)]
 }
 
-func (b *quBuf) IsValidPos(pos BufPos) bool {
+func (b *quBuf) IsValidPos(pos BufIdx) bool {
 	return pos.GE(b.Head) && pos.LT(b.Tail)
 }
 
-func (bp BufPos) LT(pos BufPos) bool {
+func (bp BufIdx) LT(pos BufIdx) bool {
 	return bp-pos < 0
 }
 
-func (bp BufPos) GE(pos BufPos) bool {
+func (bp BufIdx) GE(pos BufIdx) bool {
 	return bp-pos >= 0
 }
 
-func (bp BufPos) GT(pos BufPos) bool {
+func (bp BufIdx) GT(pos BufIdx) bool {
 	return bp-pos > 0
 }
 

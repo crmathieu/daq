@@ -17,6 +17,7 @@ const (
 )
 
 type CLIENT struct {
+	Type			uint8				// either "Standard client" (0) or "relay client" (1)
 	ClientToken 	string
 	Cursor 			*streamer.QueueCursor 	// queue attached to this channel
 	Socket         	*websocket.Conn 	// The websocket connection with client

@@ -1,14 +1,17 @@
-
 package main
 import (
 	"math"
 )
 
 func mod(a, b float64) float64 {
-	if a < b {
+	for a >= b {
+		a = a - b
+	}
+	return a
+	/*	if a < b {
 		return a
 	}
-	return mod(a - b, b)
+	return mod(a - b, b)*/
 }
 
 func g(h float64) float64 {
@@ -34,23 +37,24 @@ func P(h float64) float64 {
 */
 
 
-func Isp(h float64) float64 {
-	Engine := EnginesMap[F9.Stages[BOOSTER].EngineID]
-	if h < 800000 {
+func (v *VEHICLE) Isp(h float64) float64 {
+	Engine := EnginesMap[v.Stages[BOOSTER].EngineID]
+	if h < 80000 {
 		return Engine.Isp_sl + (1.0 / P(0)) * (P(0) - P(h * 1e-3)) * (Engine.Isp_vac - Engine.Isp_sl)
 	}
 	return Engine.Isp_vac
 }
 
-func GetThrust(H float64, stage int32) float64 {
-	if stage == BOOSTER || !_MECO1 {
-		return Isp(H - Re) * 236 * g0	// 236 kg/s = M1D rate of fuel consumption
+func (v *VEHICLE) GetThrust(H float64, stage int32) float64 {
+	if stage == BOOSTER || !v.SysGuidance._MECO1 {
+		return v.Isp(H - Re) * 236 * g0	// 236 kg/s = M1D rate of fuel consumption
+//		return v.Isp(H - Re) * EnginesMap[v.Stages[BOOSTER].EngineID].Flow_rate * g0
 	} 
-	return EnginesMap[F9.Stages[STAGE2].EngineID].Th_vac    //M1Dv.Th_vac
+	return EnginesMap[v.Stages[STAGE2].EngineID].Th_vac    //M1Dv.Th_vac
 }
 
-func flip(i int32) {
-	F9.Stages[i].gam = F9.Stages[i].alpha + math.Pi		// retrograde
+func (r *VEHICLE) flip(i int32) {
+	r.Stages[i].gamma = r.Stages[i].alpha + math.Pi		// retrograde
 }
 
 

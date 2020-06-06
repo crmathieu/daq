@@ -5,7 +5,7 @@ import (
 )
 
 type SensorHandlers struct {
-	ReadSensor 	func () [data.DATAPOINT_SIZE]byte
+	ReadSensor 	func (int32) [data.DATAPOINT_SIZE]byte
 }
 
 type rocketStage struct {
@@ -35,7 +35,7 @@ type VEHICLE struct {
 	EarlyTiltAngle, LateTiltAngle float64
 	TargetAltitude, OrbitalVelocity float64
 
-	Stage				[]rocketStage
+	Stage			[]rocketStage
 }
 
 func NewVehicle() *VEHICLE {

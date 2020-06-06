@@ -14,11 +14,12 @@
     gtag('js', new Date());
     gtag('config', 'UA-109828050-2');
   </script -->
-  <script async type="text/javascript" src="../js/trajectory.js"></script>
+  <script type="text/javascript" src="../js/events.js?7"></script>
+  <script type="text/javascript" src="../js/trajectory.js?23"></script>
 </head>
 
-<body onload="draw();">
-
+<!-- body onload="draw();" -->
+<body>
   <!-- audio id="audio">
     <source src="/media/success.wav" type="audio/wav">
     Sorry! Your browser does not support the audio element.
@@ -29,18 +30,29 @@
   </div>
   
   <div style="width:200px;display:inline-block;">
-    Velocity: <div id="Velocity"></div>
-    Accelera:<div id="Acceleration"></div>
-    Range: <div id="Range"></div>
-    Altitude: <div id="Altitude"></div>
-    Inclination: <div id="Inclination"></div>
+    Time: <div id="time"></div><br>
+    <div>BOOSTER</div>
+    Velocity (km/h): <div id="Velocity_0"></div>
+    Accelera:<div id="Acceleration_0"></div>
+    Range (km): <div id="Range_0"></div>
+    Altitude (km): <div id="Altitude_0"></div>
+<!--    Inclination: <div id="Inclination"></div>
     Angle: <div id="Angle"></div>
     ROC: <div id="RateOfChange"></div>
     Mass <div id="Mass"></div>
     Mass depleted: <div id="Mejected"></div>
     Mass Flow: <div id="Mflow"></div>
     X: <div id="X"></div>
-    Y: <div id="Y"></div>
+    Y: <div id="Y"></div -->
+    <br><div>STAGE-2</div>
+    Velocity (km/h): <div id="Velocity_1"></div>
+    Accelera:<div id="Acceleration_1"></div>
+    Range (km): <div id="Range_1"></div>
+    Altitude (km): <div id="Altitude_1"></div>
+    <br>
+<!--    X: <div id="X"></div>
+    Y: <div id="Y"></div -->
+    Events: <div id="EventsList"></div>
 </div>
 <div style="display:inline-block;">
   <canvas id="DAQcanvas" width="1000" height="550"></canvas>
@@ -66,6 +78,10 @@
     //const giftDuration = 10000;
     //const giftDelay = 1000;
 
+    var eventHist = 0;
+    var nsec = 0;
+    var timeHist = -20;
+    var initStage2Position = false;
     var timerId = 0;
     var restartId = 0;
     var timeout = 60000;
@@ -73,7 +89,9 @@
     var isConnOpen = false;
     var websockURL = "{{.SocketType}}://{{.Host}}/ws/{{.ClientToken}}";
     var bigEndian = isBigEndian()
-    var iterations = 0;
+    var boosterPos = new position();
+    var stage2Pos = new position();
+    stage2Pos.set(-1, -1);
 
     /*var websockURL = "ws://localhost:1969/ws/plot"*/
 
@@ -115,6 +133,9 @@
 
       conn = new WebSocket(websocketServerAddr);
       conn.binaryType = 'arraybuffer';
+      draw();
+      boosterPos.setScale();
+      stage2Pos.setScale();
 
       //-----------------------------------------------------------------------
       conn.onopen = function(evt) {
@@ -127,35 +148,6 @@
       };
 
       //---------------------------------------------WebSocket--------------------------
-        conn.onmessagebis = function (evt) {
-          //let buffer = new ArrayBuffer(evt.data.length);
-          //let dataView = new DataView(evt.data)
-          let idView = new Uint16Array(evt.data, 0, 1);
-          switch (idView[0]) {
-          //let littleEndian = !bigEndian
-          //var packetType = dataView.getUint16(0, littleEndian)
-          //switch (packetType) {
-            case 1: // velocity
-              //let velocityView = new Float32Array(evt.data, 2, 2);
-              let velView = new Float32Array(evt.data, 4, 2);
-              
-              document.getElementById("Velocity").innerHTML = String(velView[0]); //velocityView[0];
-              document.getElementById("Acceleration").innerHTML = String(velView[1]); //velocityView[1];
-              console.log(evt.data);
-              break;
-          }
-
-          //var jsonData = JSON.parse(evt.data)
-          //        console.log(evt.data);
-          //giftText.innerHTML = jsonData.username;
-          //        var num = parseFloat(jsonData.gifts[0].amount);
-          //giftAmount.innerHTML = num.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-          //gift.src = jsonData.gifts[0].asset;
-          //        clearTimeout(timerId);
-          //      timerId = setTimeout(keepAlive, timeout, conn);
-
-        };
-
       conn.onmessage = function(evt) {
         //let buffer = new ArrayBuffer(evt.data.length);
         let dataView = new DataView(evt.data)
@@ -164,24 +156,54 @@
         let littleEndian = !bigEndian 
         var packetType = dataView.getUint32(0, littleEndian)
         switch(packetType) {
-          case 1: // velocity
+          case IDVELOCITY: // velocity:	Id, Velocity, Acceleration, Stage
               //let velocityView = new Float32Array(evt.data, 2, 2);
-              document.getElementById("Velocity").innerHTML = dataView.getFloat32(4, littleEndian).toString(); //velocityView[0];
-              document.getElementById("Acceleration").innerHTML = dataView.getFloat32(8, littleEndian).toString(); //velocityView[1];
+              var stage = dataView.getInt32(12, littleEndian).toString();
+              //document.getElementById("Stage").innerHTML = dataView.getInt32(12, littleEndian).toString(); 
+              document.getElementById("Velocity_"+stage).innerHTML = (dataView.getFloat32(4, littleEndian) * 3600).toFixed(2); //velocityView[0];
+              document.getElementById("Acceleration_"+stage).innerHTML = dataView.getFloat32(8, littleEndian).toFixed(2); //velocityView[1];
               console.log(evt.data);
               break;
 
+          case IDPOSITION: // position: 	Id, Range, Altitude, Stage
+            var stage = dataView.getInt32(12, littleEndian).toString();
 
-
- 
-          case 2: // position
             //let positionView = new Float32Array(evt.data, 2, 3);
-            document.getElementById("Range").innerHTML = dataView.getFloat32(4, littleEndian); //positionView[0];
-            document.getElementById("Altitude").innerHTML = dataView.getFloat32(8, littleEndian); //positionView[1];
-            document.getElementById("Inclination").innerHTML = dataView.getFloat32(12, littleEndian); //positionView[2];
-            plot(ctx, axes, "rgb(11,153,11)", 1, iterations++, dataView.getFloat32(4, littleEndian), dataView.getFloat32(8, littleEndian));
+            document.getElementById("Range_"+stage).innerHTML = dataView.getFloat32(4, littleEndian).toFixed(2); //positionView[0];
+            document.getElementById("Altitude_"+stage).innerHTML = dataView.getFloat32(8, littleEndian).toFixed(2); //positionView[1];
+            //document.getElementById("Inclination").innerHTML = dataView.getFloat32(12, littleEndian); //positionView[2];
+            if (stage == 0) {
+              boosterPos.plot(ctx, axis, "red", 3, dataView.getFloat32(4, littleEndian), dataView.getFloat32(8, littleEndian));
+            } else {
+              stage2Pos.plot(ctx, axis, "green", 3, dataView.getFloat32(4, littleEndian), dataView.getFloat32(8, littleEndian));
+            }
             break;
-          case 3: // tilt angle
+          case IDTIME:
+            var time = dataView.getFloat32(4, littleEndian);
+            nsec = Math.round(time);
+            if (nsec > timeHist) {
+/*              var min = Math.round(nsec / 60);
+              var hou = Math.round(min / 60);
+              min = min - hou * 60;
+              var sec = nsec % 60;
+              document.getElementById("time").innerHTML = outputDate(hou, min, sec);*/ 
+              document.getElementById("time").innerHTML = new Date(nsec * 1000).toISOString().substr(11, 8) + " (" + nsec.toString() + ")";
+              timeHist = nsec;
+            } 
+            break;
+
+          case IDEVENT: 
+            var eventID = dataView.getInt32(4, littleEndian);
+            eventHist = dataView.getInt32(12, littleEndian);
+            if (lastEvent != eventID) {
+              document.getElementById("EventsList").innerHTML += "<br>"+eventMap.get(eventID) + " (" + nsec + ")";
+              lastEvent = eventID;
+            }
+            if ((eventHist & E_STAGESEP) && !initStage2Position ) {
+              stage2Pos.set(boosterPos.x, boosterPos.y);
+              initStage2Position = true;
+            }
+/*          case 3: // tilt angle
             //let tiltAngleView = new Float32Array(evt.data, 2, 2);
             document.getElementById("Angle").innerHTML = dataView.getFloat32(4, littleEndian); //tiltAngleView[0];
             document.getElementById("RateOfChange").innerHTML = dataView.getFloat32(8, littleEndian); //tiltAngleView[1];
@@ -191,7 +213,7 @@
             document.getElementById("Mass").innerHTML = dataView.getFloat32(4, littleEndian); //propellantView[0];
             document.getElementById("Mejected").innerHTML = dataView.getFloat32(8, littleEndian); //propellantView[1];
             document.getElementById("Mflow").innerHTML = dataView.getFloat32(12, littleEndian); //propellantView[2];
-            break;
+            break;*/
           default: // ignore for now
            // let thrustView = new Float32Array(evt.data, 2, 1);
            // let stageView = new Uint8Array(evt.data, 6, 1);
