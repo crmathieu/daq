@@ -109,9 +109,12 @@ func GetGSInstanceID() string {
 	return gsid
 }
 
+// AcceptClient ---------------------------------------------------------------
+// wait for events (either register or unregister) to add / remove 
+// client to the groundstation hub
+// ----------------------------------------------------------------------------
 func (h *Hub) AcceptClient() {
 
-	//var err error
 	for {
 		// keep looping waiting on h.register -or- h.unregister channels
 		select {
