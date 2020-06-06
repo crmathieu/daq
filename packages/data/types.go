@@ -36,6 +36,9 @@ const(
 	//MAXVOL_PROPELLANT = 200000
 	
 	DOWNLINK_SERVER = "localhost:2000"
+	RELAY_SERVER = "localhost:2001"
+
+	DOWNLINK_WEBPORT = "1969"
 
 	IDVELOCITY = uint32(1)
     IDPOSITION = uint32(2)

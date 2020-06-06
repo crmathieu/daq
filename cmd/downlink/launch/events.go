@@ -105,7 +105,7 @@ func (r *VEHICLE) execute(event Event) {
 		fmt.Println("\t",r.Stages[BOOSTER].Clock,"--> Lift off .....")
 		break
 
-	case "PITCH_START":
+	case "PITCH":
 		r.SysGuidance._pitch = r.pitchStart()
 		//output_telemetry(event, nil, 0)
 		fmt.Println("\t",r.Stages[BOOSTER].Clock,"--> Pitching .....")

@@ -10,30 +10,39 @@ import (
 	"unsafe"
 )
 
-type daq struct {
+type Daq struct {
 	Addr          	string
+	Relay			bool
+	ConnListener    func()
 	VehicleProfile	string
 	sQue 			*streamer.Queue
 }
 
-var DAQ *daq 
+var DAQ *Daq 
 
 // NewDaq ---------------------------------------------------------------------
 // creates a new Data Acquisition object
 // ----------------------------------------------------------------------------
-func NewDaq() *daq {
-	return &daq{
+func NewDaq(server string, relay bool) *Daq {
+	var Daq = Daq{
+		Addr: server,
+		Relay: relay,
+//		ConnListener: Listener,
 		// create a streamer for this downlink
 		sQue: streamer.NewQueue(),
 	}
+	if relay {Daq.ConnListener = Daq.RelayListener} else {Daq.ConnListener = Daq.ListenAndServe}
+	return &Daq
 }
 
-// ListenAndServer ------------------------------------------------------------
+
+// ListenAndServe -------------------------------------------------------------
 // listen to downlink connection and read packets
 // ----------------------------------------------------------------------------
-func (daq *daq) ListenAndServer() {
+func (daq *Daq) ListenAndServe() {
 	// established downlink with launch vehicle
-	srv, err := net.Listen("tcp", data.DOWNLINK_SERVER)
+	fmt.Println("listening on:", daq.Addr)
+	srv, err := net.Listen("tcp", daq.Addr) //data.DOWNLINK_SERVER)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -42,10 +51,11 @@ func (daq *daq) ListenAndServer() {
 	// set up telemetry hub
 	go LaunchHUB.AcceptClient()
 
-	fmt.Println("Ground Station Listening for downlink on", data.DOWNLINK_SERVER)
+	fmt.Println("Ground Station Listening for downlink on", daq.Addr) //data.DOWNLINK_SERVER)
 
 	for {
 		conn, err := srv.Accept()
+		fmt.Println("got connection")
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -54,10 +64,11 @@ func (daq *daq) ListenAndServer() {
 	}
 }
 
+
 // ReadDownlinkPackets --------------------------------------------------------
 // reads one or more data packet from connection
 // ----------------------------------------------------------------------------
-func (daq *daq) ReadDownlinkPackets(c net.Conn) {
+func (daq *Daq) ReadDownlinkPackets(c net.Conn) {
 	const MAXERROR = 5
 	start := time.Now()
     tbuf := make([]byte, 81920)
@@ -83,13 +94,8 @@ func (daq *daq) ReadDownlinkPackets(c net.Conn) {
 			c.Close()
 		}*/
 
-		//log.Println(tbuf[:n])
 		daq.demuxDataPoints(&tbuf, n)
 		totalBytes += n
-//		if n != 256 {
-//			log.Println(n)
-//		}
-        //log.Println(n)
     }
     fmt.Printf("%d bytes read in %s", totalBytes, time.Now().Sub(start))
     c.Close()
@@ -99,7 +105,7 @@ func (daq *daq) ReadDownlinkPackets(c net.Conn) {
 // from the number of datapoints value found in the packet header, reads each
 // datapoint and save it in DAQ streamer
 // ----------------------------------------------------------------------------  
-func (daq *daq) demuxDataPoints(pk *[]byte, size int) {
+func (daq *Daq) demuxDataPoints(pk *[]byte, size int) {
 
 	numberDP := *(*byte)(unsafe.Pointer(&(*pk)[data.PACKET_NDP_OFFSET]))
 
@@ -110,10 +116,6 @@ func (daq *daq) demuxDataPoints(pk *[]byte, size int) {
 			daq.sQue.WritePacket(*dp)
 	//		daq.viewPacket(dp)
 		}
-		// add time packet DOESN"T WORK !!!!
-//		dp := &data.SENStime{Id:data.IDTIME, Time:*(*float32)(unsafe.Pointer(&(*pk)[data.PACKET_TT_OFFSET])),} 
-//		daq.sQue.WritePacket(*(*data.DataPoint)((unsafe.Pointer)(dp)))
-
 	} else {
 		fmt.Println("CRC error encountered...")
 	}

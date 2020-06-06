@@ -88,8 +88,8 @@ func (r *VEHICLE) liftOff() bool {
 func (r *VEHICLE) timeStep(i int32) { // i = stage
 
 	if r.SysGuidance._MEI1 {
-//		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * 236 * r.Stages[i].dt
-		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * EnginesMap[r.Stages[i].EngineID].Flow_rate * r.Stages[i].dt
+		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * 236 * r.Stages[i].dt
+//		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * EnginesMap[r.Stages[i].EngineID].Flow_rate * r.Stages[i].dt
 		r.Stages[i].Mf = r.Stages[i].Mf - dm;
 		r.Stages[i].Mass = r.Stages[i].Mass - dm;
 	}

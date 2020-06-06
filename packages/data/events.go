@@ -23,7 +23,7 @@ const (
 var EventMapping = map[string]uint32{
 	"MEI": E_MEI_1,
 	"LIFT_OFF": 	E_LIFTOFF,
-	"START_PITCH": E_STARTPITCH,
+	"PITCH": E_STARTPITCH,
 	"MECO": E_MECO_1,
 	"STAGE_SEP": E_STAGESEP,
 	"SEI": E_SEI_1,
@@ -40,6 +40,25 @@ var EventMapping = map[string]uint32{
 	"THROTTLE_UP": E_THROTTLE_U,
 } 
 
+var EventMappingString = map[string]string{
+	"MEI": "Main engines ignition",
+	"LIFT_OFF": "Lift off",
+	"PITCH": "Pitch starts",
+	"MECO": "Main engine cut off",
+	"STAGE_SEP": "Stage Separation",
+	"SEI": "Second stage ignition",
+	"BOOSTBACK_BURN_ON": "Boostback burn started",
+	"BOOSTBACK_BURN_OFF": "Boostback burn stopped",
+	"ENTRY_BURN_ON": "Entry burn started",
+	"ENTRY_BURN_OFF": "ENtry burn stopped",
+	"SECO": "Second stage engine cut off",
+	"SEI2": "Second stage 2nd engine ignition",
+	"SECO2": "Second stage 2nd engine cut off",
+	"LANDING_BURN_ON": "Landing burn started",
+	"LANDING_BURN_OFF": "Landing burn stopped",
+	"THROTTLE_DWN": "Throttling down",
+	"THROTTLE_UP": "Throttling up",
+} 
 
 // note:
 // 	E_BBSTART and E_BBSTOP can be used interchangeably with E_MEI_2 and E_MECO_2

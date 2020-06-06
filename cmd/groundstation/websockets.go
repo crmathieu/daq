@@ -28,6 +28,17 @@ var (
 // establishes a websocket connection with a (browser) client
 // ----------------------------------------------------------------------------
 func NewGroundStationClient(w http.ResponseWriter, r *http.Request) {
+	NewClient(w, r, 0)
+}
+
+// NewGroundStationRelay ------------------------------------------------------
+// establishes a websocket connection with a Relay
+// ----------------------------------------------------------------------------
+func NewGroundStationRelay(w http.ResponseWriter, r *http.Request) {
+	NewClient(w, r, 1)
+}
+
+func NewClient(w http.ResponseWriter, r *http.Request, ctype uint8) {
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -40,9 +51,10 @@ func NewGroundStationClient(w http.ResponseWriter, r *http.Request) {
 
 	// build a client ...
 	client := CLIENT{
+		Type:		  ctype,
 		Cursor:		  DAQ.sQue.Latest(), // obtain cursor of latest position from DAQ
 		Socket:       ws,
-		ClientToken:  r.URL.Path[len("/ws/"):], //clientToken,
+		ClientToken:  r.URL.Path[len("/wr/"):], //clientToken,
 		Valid:        true,
 		WriteErr:     false,
 		ReadErr:      false,
@@ -171,10 +183,10 @@ func home(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	//fmt.Println("sending template")
-	token := r.URL.Path[len("/stream/"):]
+	authToken := r.URL.Path[len("/stream/"):]
 
 	// the client token can be used to authorize certain clients only
-	if authorized(token) {
+	if authorized(authToken) {
 
 		// Unmarshal settings into this struct
 		notificationSettings := struct {
@@ -202,7 +214,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		w.WriteHeader(http.StatusUnauthorized)
-		io.WriteString(w, fmt.Sprintf("%s: Invalid token\n", token))
+		io.WriteString(w, fmt.Sprintf("%s: Invalid authToken\n", authToken))
 	}
 }
 

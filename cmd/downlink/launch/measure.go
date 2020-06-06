@@ -17,12 +17,11 @@ func (v *VEHICLE) readTiltAngle() [data.DATAPOINT_SIZE]byte {	//interface{}  {
 	return [data.DATAPOINT_SIZE]byte{}
 }
 
-func (v *VEHICLE) readThrust() [data.DATAPOINT_SIZE]byte {	//interface{}  {
-/*	p := (*data.SENSthrust)(v.Stage[v.CurrentStage].Instruments[data.STHRUST_OFFSET])
-	p.Thrust = float32(v.Stage[v.CurrentStage].Thrust)
-	p.Stage = v.CurrentStage + 1
-	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))*/
-	return [data.DATAPOINT_SIZE]byte{}
+func (v *VEHICLE) readThrust(stage int32) [data.DATAPOINT_SIZE]byte {	//interface{}  {
+	p := (*data.SENSthrust)(v.Instruments[data.STHRUST_OFFSET])
+	p.Thrust = float32(v.Stages[stage].Thrust)
+	p.Stage = stage
+	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
 
 func (v *VEHICLE) readVelocity(stage int32) [data.DATAPOINT_SIZE]byte {	//interface{}  {
