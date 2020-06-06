@@ -31,14 +31,13 @@ const(
 	INSTRUMENTS_COUNT = STIME_OFFSET + 1
 
 	// Rocket constants
-	//DRYWEIGHT = 15000
-	//MAXVOL_OXYDIZER = 100000
-	//MAXVOL_PROPELLANT = 200000
-	
+
+	// groundstation default server/port/webport
 	DOWNLINK_SERVER = "localhost"
 	DOWNLINK_PORT = "2000"
 	DOWNLINK_WEBPORT = "1969"
 
+	// datapoints ID
 	IDVELOCITY = uint32(1)
     IDPOSITION = uint32(2)
 //    STURBOPUMP = 2
@@ -52,13 +51,12 @@ const(
 
 
 
-// each dp is 16 bytes long
+// Datapoint definitions (each dp is 16 bytes long)
 type SENSvelocity struct {
-	Id    	 		uint32 //uint16
+	Id    	 		uint32
 	Velocity 		float32
 	Acceleration 	float32
 	Stage			uint32
-//	Reserved 		[4]byte //[6]byte
 }
 
 type SENSevent struct {
@@ -80,60 +78,50 @@ type SENStimestamp struct {
 }
 
 type SENSposition struct {
-	Id    		uint32 //uint16
+	Id    		uint32
 	Range 		float32
     Altitude 	float32
-	//Inclinaison float32
 	Stage		uint32
-	//reserved	[2]byte
 }
 
 type SENStiltAngle struct {
-	Id   uint32 //uint16
+	Id   		uint32
 	Alpha, Beta, Gamma float32
-/*	Angle  float32
-	RateOfChange float32
-	Reserved [4]byte //[6]byte */
 }
 
 type SENSthrust struct {
-	Id   	uint32 //uint16
+	Id   	uint32
 	Thrust  float32
-	Stage   int32 //int8
-	Reserved [4]byte //[9]byte
+	Stage   int32
+	Reserved [4]byte
 }
 
 type SENSturboPump struct {
-	Id   uint32 //uint16
+	Id   uint32
 	Rpm  int32
-	Reserved [8]byte //[10]byte
+	Reserved [8]byte
 }
 
 type SENSenginePressure struct {
-	Id   	 uint32 //uint16
+	Id   	 uint32
 	Pressure float32
-	Reserved [8]byte //[10]byte
+	Reserved [8]byte
 }
 
 type SENSpropellantMass struct {
-	Id   	 uint32 //uint16
+	Id   	 uint32 
 	Mass   	 float32
-	//Mejected float32
 	Stage	 uint32
 	Mflow	 float32
-	//reserved [2]byte
 }
 
 type DataPoint struct {
-	Id    	 		uint32 //uint16
-	Reserved 		[12]byte //[14]byte
+	Id    	 		uint32 
+	Reserved 		[12]byte
 }
 
-type Pempty []byte
-
+// redis extension (if needed for various reason)
 type CONFinfo struct {
-//		DB 				  *sql.DB
-//		DB_dsn     		  string `yaml:"db_dsn"`	
 		REDIS_dsn  		  string `yaml:"redis_dsn"`	
 		RedisHost  string `yaml:"cache-redis-host"`
 		RedisPort  string `yaml:"cache-redis-port"`

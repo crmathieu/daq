@@ -1,5 +1,4 @@
 package data
-//import "unsafe"
 import "fmt"
 var ieeeCrc32Tbl = []uint32{
 	0x00000000, 0xB71DC104, 0x6E3B8209, 0xD926430D, 0xDC760413, 0x6B6BC517,
@@ -48,16 +47,14 @@ var ieeeCrc32Tbl = []uint32{
 }
 
 func CRC32SAVE(crc uint32, data *[]byte) uint32 {
-	//	fmt.Println(*data)
 	for _, b := range *data {
 		crc = ieeeCrc32Tbl[b^byte(crc)] ^ (crc >> 8)
 	}
 	return crc
 }
 
-func CRC32BIS(crc uint32, data *[]byte, size int) uint32 { //size uintptr) uint32 {
+func CRC32BIS(crc uint32, data *[]byte, size int) uint32 { 
 	fmt.Println("\n",(*data)[:])
-//	for k := uintptr(0); k < size; k++ {
 	for k := 0; k < size; k++ {
 		fmt.Println(k, size)
 		crc = ieeeCrc32Tbl[(*data)[k]^byte(crc)] ^ (crc >> 8)
