@@ -1,14 +1,10 @@
 package main
 import (
-//	"net"
 	"fmt"
-//	"time"
-//	"io"
 	"github.com/crmathieu/daq/packages/data"
 	"net/url"
 	"github.com/gorilla/websocket"
 	"unsafe"
- 	//"encoding/binary"
 )
 
 // RelayListener -------------------------------------------------------------
@@ -16,8 +12,7 @@ import (
 // ----------------------------------------------------------------------------
 func (daq *Daq) RelayListener() {
 
-//	u := url.URL{Scheme: "ws", Host: data.DOWNLINK_SERVER, Path: "/ws/"+CreateLaunchSessionToken()}
-	u := url.URL{Scheme: "ws", Host: "localhost:1969", Path: "/wr/"+CreateLaunchSessionToken()}
+	u := url.URL{Scheme: "ws", Host: daq.RelayFrom, Path: "/wr/"+CreateLaunchSessionToken()}
 	fmt.Printf("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)

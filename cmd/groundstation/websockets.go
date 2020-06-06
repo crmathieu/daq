@@ -182,7 +182,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	//fmt.Println("sending template")
+
 	authToken := r.URL.Path[len("/stream/"):]
 
 	// the client token can be used to authorize certain clients only

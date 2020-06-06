@@ -12,7 +12,8 @@ import (
 
 type Daq struct {
 	Addr          	string
-	Relay			bool
+	Port			string
+	RelayFrom		string
 	ConnListener    func()
 	VehicleProfile	string
 	sQue 			*streamer.Queue
@@ -23,15 +24,19 @@ var DAQ *Daq
 // NewDaq ---------------------------------------------------------------------
 // creates a new Data Acquisition object
 // ----------------------------------------------------------------------------
-func NewDaq(server string, relay bool) *Daq {
+func NewDaq(server, port, relayFrom string) *Daq {
 	var Daq = Daq{
 		Addr: server,
-		Relay: relay,
-//		ConnListener: Listener,
+		Port: port,
+		RelayFrom: relayFrom,
 		// create a streamer for this downlink
 		sQue: streamer.NewQueue(),
 	}
-	if relay {Daq.ConnListener = Daq.RelayListener} else {Daq.ConnListener = Daq.ListenAndServe}
+	if relayFrom != "" {
+		Daq.ConnListener = Daq.RelayListener
+	} else {
+		Daq.ConnListener = Daq.ListenAndServe
+	}
 	return &Daq
 }
 
@@ -41,8 +46,8 @@ func NewDaq(server string, relay bool) *Daq {
 // ----------------------------------------------------------------------------
 func (daq *Daq) ListenAndServe() {
 	// established downlink with launch vehicle
-	fmt.Println("listening on:", daq.Addr)
-	srv, err := net.Listen("tcp", daq.Addr) //data.DOWNLINK_SERVER)
+	fmt.Println("listening on:", daq.Addr+":"+daq.Port)
+	srv, err := net.Listen("tcp", daq.Addr+":"+daq.Port) 
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -51,7 +56,7 @@ func (daq *Daq) ListenAndServe() {
 	// set up telemetry hub
 	go LaunchHUB.AcceptClient()
 
-	fmt.Println("Ground Station Listening for downlink on", daq.Addr) //data.DOWNLINK_SERVER)
+	fmt.Println("Ground Station Listening for downlink on", daq.Addr+":"+daq.Port) 
 
 	for {
 		conn, err := srv.Accept()
