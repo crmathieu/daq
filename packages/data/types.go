@@ -1,26 +1,9 @@
 package data
 
-/*type GSbuf struct {
-	Marker byte
-	Index byte
-	Buffer [PACKET_PAYLOAD_LENGTH]byte
-	Crc uint32
-	//	Ready bool
-}*/
-
-//type PL_DYN struct {
-//    CoorX, CoorY, CoorZ float64
-//    VelX, VelY, VelZ    float64/
-//}
-
-//type GSbuf []byte
-
 const (
 	// instruments offset in sensors map
-	SVELOCITY_OFFSET = uint16(0)
-	SPOSITION_OFFSET = uint16(1)
-	//    STURBOPUMP = 2
-	//	SENGINEPRE = 3
+	SVELOCITY_OFFSET       = uint16(0)
+	SPOSITION_OFFSET       = uint16(1)
 	STILTANGLE_OFFSET      = uint16(2)
 	STHRUST_OFFSET         = uint16(3)
 	SEVENT_OFFSET          = uint16(4)
@@ -37,10 +20,8 @@ const (
 	DOWNLINK_WEBPORT = "1969"
 
 	// datapoints ID
-	IDVELOCITY = uint32(1)
-	IDPOSITION = uint32(2)
-	//    STURBOPUMP = 2
-	//	SENGINEPRE = 3
+	IDVELOCITY       = uint32(1)
+	IDPOSITION       = uint32(2)
 	IDTILTANGLE      = uint32(3)
 	IDTHRUST         = uint32(4)
 	IDEVENT          = uint32(5)
