@@ -13,42 +13,42 @@ Packet format:
 - Each datapoint measurment consist of a 14 bytes buffer
 */
 
-// header is 16 bytes 
+// header is 16 bytes
 const PACKET_PAYLOAD_LENGTH = 32 //255
 const PACKET_LENGTH = PACKET_PAYLOAD_LENGTH + PACKET_PAYLOAD_OFFSET
 const PACKET_START1 = byte(0xFF)
 const PACKET_START2 = byte(0xAA)
 
 // packet offsets
-const PACKET_START_OFFSET = 0		// start marker
-const PACKET_CRC_OFFSET = 2			// CRC is 32bits and calculated on payload only
-const PACKET_NDP_OFFSET = 6			// number of datapoints in this packet
-const PACKET_TT_OFFSET = 7			// timestamp is on 64bits
-const PACKET_RES_OFFSET = 15		// 1 reserved bytes
-const PACKET_PAYLOAD_OFFSET = 16	// payload starts here (15 dp per payload)
+const PACKET_START_OFFSET = 0    // start marker
+const PACKET_CRC_OFFSET = 2      // CRC is 32bits and calculated on payload only
+const PACKET_NDP_OFFSET = 6      // number of datapoints in this packet
+const PACKET_TT_OFFSET = 7       // timestamp is on 64bits
+const PACKET_RES_OFFSET = 15     // 1 reserved bytes
+const PACKET_PAYLOAD_OFFSET = 16 // payload starts here (15 dp per payload)
 
 const PACKET_HEADER = 16
 const DATAPOINT_SIZE = 16
 
 /*
-0	255 
+0	255
 1	170 	STARTER
 	---
-2	143 
+2	143
 3	96 		CRC
-4	145 
+4	145
 5	196
-	--- 
+	---
 6	3 		NDP
 	---
-7	64 
-8	106 
-9	21 
+7	64
+8	106
+9	21
 10	96 		TST
-11	156 
-12	99 
-13	11 
-14	22 
+11	156
+12	99
+13	11
+14	22
 	---
 15	0 		reserved
 	---
