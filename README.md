@@ -48,7 +48,7 @@ and then
 ```bash
 > ./launch
 ```
-As the vehicle code starts crunching data, a streaming goroutine wakes up every 10 milliseconds to read critical variables values (sensors) and packages them into datapoints. When there are enough datapoints to fill a packet, a CRC32 is calculated on the datapoints only and save in the packet header, along with the current time and the number of datapoints in the packets. The packet is then sent to the ground station.
+As the vehicle code starts crunching data, a streaming goroutine wakes up every 10 milliseconds to read critical variables values (sensors) and packages them into datapoints. When there are enough datapoints to fill a packet, a CRC32 is calculated on the datapoints only and saved in the packet header, along with the current time and the number of datapoints in the packets. The packet is then sent to the ground station.
 
 From now on, you should see data coming to your client.
 
@@ -73,11 +73,11 @@ offset 15:  1 reserved byte
 ### Relay
 The diagram shows a third component we haven't mentioned yet: **_the Relay_**. The relay isn't necessary for the data flow to work. It is simply a way to _scale_ the ground station by creating duplicates of the streaming queue and allow new clients to connect to the relay instead of the ground station directly. 
 
-The relay code is essentially the same as the ground station except that it doesn't listen for data on the downlink. Instead, it relies on a websocket connection with the ground station just as any another client would. The relay has its own streaming queue on which the ground station oncoming data is written to. Clients connect to the relay using the same syntax as for the ground station, but with a variation in port and webport values.
+The relay code is essentially the same as the ground station except that it doesn't listen for data on the downlink. Instead, it relies on a websocket connection with the ground station just as any another client would. The relay has its own streaming queue on which the ground station oncoming data is written to. Clients connect to the relay using the same syntax as for the ground station, but with a variation in webport values.
 
 To start a relay:
 ```bash
-> ./groundstation -r localhost -wb 6809
+> ./groundstation -r localhost -wp 6809
 ```
 
 This will start a relay and allow web client to connect to it using the request:
