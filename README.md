@@ -25,7 +25,7 @@ and then
 ```bash
 > ./groundstation
 ```
-This will make the groundstation listen for data on its downlink with the vehicle, and also listen for clients to connect to its streaming queue.
+This will make the ground station listen for data on its downlink with the vehicle, and also listen for clients to connect to its streaming queue.
 
 
 ### Second, run a client against the ground station
@@ -83,4 +83,9 @@ To start a relay:
 This will start a relay and allow web client to connect to it using the request:
 ```
 http://localhost:6809/stream/123
+```
+
+### Note
+```
+The current code assumes that relay and ground station operate using the same domain name. 
 ```
