@@ -20,7 +20,7 @@ To avoid unecessary overhead in packaging payload with _marhsalling / unmarshall
 # Visualize the data coming from the vehicle
 
 
-### First, start the ground station
+### 1 - Start the ground station
 Go to daq/cmd/groundstation and type:
 ```bash
 > go build
@@ -32,7 +32,7 @@ and then
 This will make the ground station listen for data on its downlink with the vehicle, and also listen for clients to connect to its streaming queue.
 
 
-### Second, run a client against the ground station
+### 2 - Run a client against the ground station
 A javascript client example is provided. It can be run from a web browser by typing in the address bar:
 ```
 localhost:1969/stream/123
@@ -43,7 +43,7 @@ localhost:1969/stream/123
 You should get a page showing you not much, as the vehicle hasn't been launched yet.
 
 
-### Third, launch the rocket
+### 3 - Launch the rocket
 Go to daq/cmd/downlink/launch and type:
 ```bash
 > go build
