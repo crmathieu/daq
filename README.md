@@ -13,6 +13,10 @@ The ground station has 3 functions:
 - Accept connection requests from clients to allow them to access the streaming data. Clients have the choice to access the stream from the most recent data, or the oldest data. 
 
 
+### Data format
+To avoid unecessary overhead in packaging payload with _marhsalling / unmarshalling_ technics, the data is always sent in binary format. It is received as an array of bytes and then casted appropriately based on the nature of its content. 
+
+
 # Visualize the data coming from the vehicle
 
 
@@ -89,6 +93,3 @@ http://localhost:6809/stream/123
 ```
 The current code assumes that relay and ground station operate using the same domain name. 
 ```
-
-### Data format
-To avoid unecessary overhead in packaging payload with _marhsalling / unmarshalling_ technics, the data is always sent in binary format. It is received as an array of bytes and then casted appropriately based on the nature of its content. 
