@@ -11,27 +11,38 @@ import (
 const PATH_2_ROOT = "."
 
 // main call as:
-// ./groundstation for main station or for a relay
-// ./groundstation -r localhost:port -p webport
+// ----------------------------------------------------------------------------
+// for ground station 
+// ./groundstation 
+// default values can be overwritten as well
+// ./groundstation -s localhost -p port -wp webport
+// ----------------------------------------------------------------------------
+// for groundstation relay
+// ./groundstation -r localhost -wp webport
+// ----------------------------------------------------------------------------
 func main() {
 
 	relayFrom := ""
 
-	// set up server as groundstation by default 
+	// set up server as groundstation using default values
 	grdserver 	:= data.DOWNLINK_SERVER 	// localhost
 	port 		:= data.DOWNLINK_PORT 		// 2000
 	webport 	:= data.DOWNLINK_WEBPORT	// 1969
 	args 		:= os.Args[1:]
 
+	// to start a grounstation with other server values than the default, type:
+	// ./groundstation -s <server> -p <port> -wp <webport>
 	// to start a groundstation relay, type on the command line
-	// ./groundstation -r <server>:<port> -p <webport>
-	// <port> must be different than the groundstation port (2000)
+	// ./groundstation -r <server> -wp <webport>
 	// <webport> must be different than the groundstation webport (1969)
 
 	for i := range(args) {
 		switch (args[i]) {
 		case "-r":
 			relayFrom = grdserver + ":" + webport
+			grdserver = args[i+1]
+			break
+		case "-s":
 			grdserver = args[i+1]
 			break
 		case "-p":

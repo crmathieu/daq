@@ -1,16 +1,16 @@
 # daq
-Daq is an attempt to simulate the flow of data between a moving vehicle (it could be a rocket, a car or anything else) and a ground station. The ground station stream the data to clients that connect to it using an authentication token.
+Daq is an attempt to simulate the flow of data between a rocket and a ground station during a launch (it could be any type of vehicle that requires a form of data transmission). The ground station, in turn, streams the data to clients that connect to it using an authentication token.
 
 
 ### Vehicle
-In this simulation, we use the dynamics of a rocket launch to generate the data. This data is sent to the ground station that has any number of client connected to it. Clients may use a portion (or the whole set) of the data.
+In this simulation, we use the dynamics of a rocket launch to generate the data. This data is sent to the ground station that has any number of client connected to it. Clients are receiving the data through a permanent websocket connection allowing for "realtime data processing". Upon arrival to the client, the data can be used to visualize what the vehicle is doing or can be logged for later processing.
 
 
 ### Ground station
-The ground station has 3 essential functions:
-- receive data from the vehicle and compare CRC32 calculated and CRC32 value provided in packet header to make sure no error were introduced in the transmission. 
+The ground station has 3 functions:
+- Make sure there were no error in the data received from the vehicle (comparing CRC32 calculated and CRC32 transmitted). 
 - Place the set of datapoints received to its streaming queue.
-- Accept connection requests from clients to allow them to access streaming data
+- Accept connection requests from clients to allow them to access the streaming data. Clients have the choice to access the stream from the most recent data, or the oldest data. 
 
 
 # Visualize the data coming from the vehicle
@@ -25,10 +25,11 @@ and then
 ```bash
 > ./groundstation
 ```
+This will make the groundstation listen for data on its downlink with the vehicle, and also listen for clients to connect to its streaming queue.
 
 
 ### Second, run a client against the ground station
-An example of client is provided as an html file. From the address bar of your favorite browser, type:
+A javascript client example is provided. It can be run from a web browser by typing in the address bar:
 ```
 localhost:1969/stream/123
 ```
@@ -47,6 +48,7 @@ and then
 ```bash
 > ./launch
 ```
+As the vehicle code starts crunching data, a streaming goroutine wakes up every 10 milliseconds to read critical variables values (sensors) and packages them into datapoints. When there are enough datapoints to fill a packet, a CRC32 is calculated on the datapoints only and save in the packet header, along with the current time and the number of datapoints in the packets. The packet is then sent to the ground station.
 
 From now on, you should see data coming to your client.
 
@@ -66,3 +68,19 @@ offset 15:  1 reserved byte
 ```
 
 ![alt text](./daq.png)
+
+
+### Relay
+The diagram shows a third component we haven't mentioned yet: **_the Relay_**. The relay isn't necessary for the data flow to work. It is simply a way to _scale_ the ground station by creating duplicates of the streaming queue and allow new clients to connect to the relay instead of the ground station directly. 
+
+The relay code is essentially the same as the ground station except that it doesn't listen for data on the downlink. Instead, it relies on a websocket connection with the ground station just as any another client would. The relay has its own streaming queue on which the ground station oncoming data is written to. Clients connect to the relay using the same syntax as for the ground station, but with a variation in port and webport values.
+
+To start a relay:
+```bash
+> ./groundstation -r localhost -wb 6809
+```
+
+This will start a relay and allow web client to connect to it using the request:
+```
+http://localhost:6809/stream/123
+```
