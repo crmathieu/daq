@@ -89,3 +89,6 @@ http://localhost:6809/stream/123
 ```
 The current code assumes that relay and ground station operate using the same domain name. 
 ```
+
+### Data format
+To avoid unecessary overhead in packaging payload with _marhsalling / unmarshalling_ technics, the data is always sent in binary format. It is received as an array of bytes and then casted appropriately based on the nature of its content. 
