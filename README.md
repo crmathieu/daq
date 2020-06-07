@@ -13,7 +13,7 @@ The ground station has 3 essential functions:
 - Accept connection requests from clients to allow them to access streaming data
 
 
-# Simulate the whole thing
+# Visualize the data coming from the vehicle
 
 
 ### First, start the ground station
@@ -32,9 +32,11 @@ An example of client is provided as an html file. From the address bar of your f
 ```
 localhost:1969/stream/123
 ```
-- *1969* is the default web port from which you can request a connection to the ground station process. 
+- *1969* is the default web port from which you can request a connection 
 - *123* is the authentication token you must provide to access the service.
+
 You should get a page showing you not much, as the vehicle hasn't been launched yet.
+
 
 ### Third, launch the rocket
 Go to daq/cmd/downlink/launch and type:
@@ -52,13 +54,15 @@ From now on, you should see data coming to your client.
 ### data point
 Each data point consists of a 16 bytes buffer containing a datapoint Id and, depending on the datapoint, a combination of values held on 4 bytes (int32, uint32, float32).  
 
-### data packet
-A data packet is a set of datapoints put together and send to the ground station as a whole. A packet has a header that contains:
 
+### data packet
+A data packet is a set of datapoints put together and send to the ground station as a whole. A packet also contains a header holding some information about the packet:
 ```text
-offset  0:  a start marker
-offset  2:  the 32bits CRC calculated on the payload only
+offset  0:  packet marker
+offset  2:  32bits CRC calculated on the payload only
 offset  6:  the number of datapoints in this packet
 offset  7:  the timestamp on 64bits
-offset 15:  1 reserved bytes
+offset 15:  1 reserved byte
 ```
+
+<img src="./daq.png>
