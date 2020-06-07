@@ -31,7 +31,7 @@ and then
 This will make the ground station listen for data on its downlink with the vehicle, and also listen for clients to connect to its streaming queue.
 
 
-### 2 - Run a client against the ground station
+### 2 - Connect a client to the ground station
 A javascript client example is provided. It can be run from a web browser by typing in the address bar:
 ```
 localhost:1969/stream/123
@@ -51,7 +51,7 @@ and then
 ```bash
 > ./launch
 ```
-As the vehicle code starts crunching data, a streaming goroutine wakes up every 10 milliseconds to read critical variables values (sensors) and packages them into datapoints. When there are enough datapoints to fill a packet, a CRC32 is calculated on the datapoints only and saved in the packet header, along with the current time and the number of datapoints in the packets. The packet is then sent to the ground station.
+As the vehicle code starts crunching data, the downlink goroutine wakes up every 10 milliseconds to read critical variables values (sensors) and packages them into datapoints. When there are enough datapoints to fill a packet, a CRC32 is calculated on the datapoints only and saved in the packet header, along with the current time and the number of datapoints in the packets. The packet is then sent to the ground station.
 
 From now on, you should see data coming to your client.
 
