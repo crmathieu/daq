@@ -9,11 +9,12 @@ In this simulation, the dynamics of a rocket launch is used to generate the data
 The ground station has 3 functions:
 - Make sure there were no error in the data received from the vehicle (comparing CRC32 calculated and CRC32 transmitted). 
 - Place the set of datapoints received to its streaming queue.
-- Accept connection requests from clients to allow them to access the streaming data. Clients have the choice to access the stream from the most recent data, or the oldest data. 
+- Accept connection requests from clients to allow them to access the streaming data. Clients have the choice to access the stream from the most recent data, or the oldest data (TBI). 
 
 
 ### Data format
 To avoid unecessary overhead in packaging payload with _marhsalling / unmarshalling_ technics, the data is always sent in binary format. It is received as an array of bytes and then casted appropriately based on the nature of its content. 
+
 
 
 # Visualize the data coming from the vehicle
@@ -71,6 +72,9 @@ offset 15:  1 reserved byte
 ```
 
 ![alt text](./daq.png)
+
+
+# Scaling
 
 
 ### Relay
