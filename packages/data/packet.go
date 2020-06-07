@@ -10,11 +10,11 @@ Packet format:
 16 --------------> Start of payload
 
 - Data between offset 0 to 15 pertains to the packet header
-- Each datapoint measurment consist of a 14 bytes buffer
+- Each datapoint measurment consist of a 16 bytes buffer
 */
 
 // header is 16 bytes
-const PACKET_PAYLOAD_LENGTH = 32 //255
+const PACKET_PAYLOAD_LENGTH = 256 //32 //255
 const PACKET_LENGTH = PACKET_PAYLOAD_LENGTH + PACKET_PAYLOAD_OFFSET
 const PACKET_START1 = byte(0xFF)
 const PACKET_START2 = byte(0xAA)
@@ -29,6 +29,7 @@ const PACKET_PAYLOAD_OFFSET = 16 // payload starts here (15 dp per payload)
 
 const PACKET_HEADER = 16
 const DATAPOINT_SIZE = 16
+const PACKET_GRP = PACKET_PAYLOAD_LENGTH / DATAPOINT_SIZE
 
 /*
 0	255

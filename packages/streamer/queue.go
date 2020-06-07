@@ -8,14 +8,10 @@ import (
 )
 
 //        time
-// ----------------->
-//
-// V-A-V-V-A-V-V-A-V-V
-// |                 |
+// ------------------->
 // 0        5        10
 // head             tail
 // oldest          latest
-//
 
 // One publisher and multiple subscribers thread-safe packet buffer queue.
 type Queue struct {
@@ -68,7 +64,20 @@ func (que *Queue) Close() (err error) {
 // WritePacket ----------------------------------------------------------------
 // Put packet into buffer, old packets will be discarded
 // ----------------------------------------------------------------------------
-func (que *Queue) WritePacket(dp data.DataPoint) (err error) {
+func (que *Queue) WritePacketXX(dp data.DataPoint) (err error) {
+/*	que.lock.Lock()
+	que.buf.Push(dp)
+	que.cond.Broadcast()
+	que.lock.Unlock()
+	return*/
+	err = nil
+	return
+}
+
+// WriteGrpPacket ----------------------------------------------------------------
+// Put a group packet into buffer, old group packets will be discarded
+// ----------------------------------------------------------------------------
+func (que *Queue) WriteGrpPacket(dp *[data.PACKET_GRP]data.DataPoint) (err error) {
 	que.lock.Lock()
 	que.buf.Push(dp)
 	que.cond.Broadcast()
@@ -101,7 +110,8 @@ func (que *Queue) Oldest() *QueueCursor {
 // ReadPacket -----------------------------------------------------------------
 // will not consume packets in Queue, it's just a cursor
 // ----------------------------------------------------------------------------
-func (qc *QueueCursor) ReadPacket() (dp data.DataPoint, err error) {
+//func (qc *QueueCursor) ReadPacket() (dp data.DataPoint, err error) {
+func (qc *QueueCursor) ReadGrpPacket() (dp [data.PACKET_GRP]data.DataPoint, err error) {
 	qc.que.cond.L.Lock()
 	buf := qc.que.buf
 	if !qc.gotpos {
@@ -126,5 +136,38 @@ func (qc *QueueCursor) ReadPacket() (dp data.DataPoint, err error) {
 		qc.que.cond.Wait()
 	}
 	qc.que.cond.L.Unlock()
+	return
+}
+
+// ReadPacket -----------------------------------------------------------------
+// will not consume packets in Queue, it's just a cursor
+// ----------------------------------------------------------------------------
+func (qc *QueueCursor) ReadPacketXX() (dp data.DataPoint, err error) {
+/*	qc.que.cond.L.Lock()
+	buf := qc.que.buf
+	if !qc.gotpos {
+		qc.pos = qc.init(buf, qc.que.dpidx)
+		qc.gotpos = true
+	}
+	for {
+		if qc.pos.LT(buf.Head) {
+			qc.pos = buf.Head
+		} else if qc.pos.GT(buf.Tail) {
+			qc.pos = buf.Tail
+		}
+		if buf.IsValidPos(qc.pos) {
+			dp = buf.Get(qc.pos)
+			qc.pos++
+			break
+		}
+		if qc.que.closed {
+			err = io.EOF
+			break
+		}
+		qc.que.cond.Wait()
+	}
+	qc.que.cond.L.Unlock()
+	return*/
+	dp = data.DataPoint{}
 	return
 }

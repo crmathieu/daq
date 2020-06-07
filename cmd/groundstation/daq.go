@@ -54,7 +54,7 @@ func (daq *Daq) ListenAndServe() {
 	}
 
 	// set up telemetry hub
-	go LaunchHUB.AcceptClient()
+	go GrndStationHUB.AcceptClient()
 
 	fmt.Println("Ground Station Listening for downlink on", daq.Addr+":"+daq.Port) 
 
@@ -116,6 +116,23 @@ func (daq *Daq) demuxDataPoints(pk *[]byte, size int) {
 
 	// calculate checksum on datapoints 
 	if data.CRC32(0, (*pk)[data.PACKET_PAYLOAD_OFFSET:], int(numberDP) * data.DATAPOINT_SIZE) == *(*uint32)(unsafe.Pointer(&(*pk)[data.PACKET_CRC_OFFSET])) {
+//		for k:=byte(0); k<numberDP; k++ {
+			dp := (*[data.PACKET_GRP]data.DataPoint)(unsafe.Pointer(&(*pk)[data.PACKET_PAYLOAD_OFFSET])) //+k*data.DATAPOINT_SIZE]))
+			daq.sQue.WriteGrpPacket(dp)
+	//		daq.viewPacket(dp)
+//		}
+	} else {
+		fmt.Println("CRC error encountered...")
+	}
+
+}
+/*
+func (daq *Daq) demuxDataPoints(pk *[]byte, size int) {
+
+	numberDP := *(*byte)(unsafe.Pointer(&(*pk)[data.PACKET_NDP_OFFSET]))
+
+	// calculate checksum on datapoints 
+	if data.CRC32(0, (*pk)[data.PACKET_PAYLOAD_OFFSET:], int(numberDP) * data.DATAPOINT_SIZE) == *(*uint32)(unsafe.Pointer(&(*pk)[data.PACKET_CRC_OFFSET])) {
 		for k:=byte(0); k<numberDP; k++ {
 			dp := (*data.DataPoint)(unsafe.Pointer(&(*pk)[data.PACKET_PAYLOAD_OFFSET+k*data.DATAPOINT_SIZE]))
 			daq.sQue.WritePacket(*dp)
@@ -125,7 +142,7 @@ func (daq *Daq) demuxDataPoints(pk *[]byte, size int) {
 		fmt.Println("CRC error encountered...")
 	}
 
-}
+}*/
 
 // viewPacket -----------------------------------------------------------------
 // reads each datapoint as "Generic dp" and then cast to its appropriate type 

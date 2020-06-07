@@ -10,7 +10,7 @@ func main() {
 //	ctx, cancel := context.WithTimeout(context.Background(), 10000 * time.Millisecond)
 	//ctx, cancel := context.WithCancel(context.Background())
 	var vehicle = NewVehicle()
-    conn, err := net.Dial("tcp", data.DOWNLINK_SERVER)
+    conn, err := net.Dial("tcp", data.DOWNLINK_SERVER+":"+data.DOWNLINK_PORT)
     if err != nil {
 		fmt.Println(err)
 		return

@@ -19,7 +19,7 @@ var (
 
 	Rclient *redis.Client
 
-	LaunchHUB   *Hub
+	GrndStationHUB   *Hub
 	gsid  string
 	gsEnv string
 )
@@ -61,7 +61,7 @@ func NewClient(w http.ResponseWriter, r *http.Request, ctype uint8) {
 	}
 
 	// ... and register it to the connection hub
-	LaunchHUB.register <- &client
+	GrndStationHUB.register <- &client
 
 	// start a go routine that will send telemetry data to client
 	go WriteLaunchTelemetry(&client)
@@ -75,7 +75,7 @@ func NewClient(w http.ResponseWriter, r *http.Request, ctype uint8) {
 func CloseGroundStationClient(w http.ResponseWriter, r *http.Request) {
 
 	clientToken := r.URL.Path[len("/ws/"):]
-	client, err := LaunchHUB.GetTelemetryClient(clientToken)
+	client, err := GrndStationHUB.GetTelemetryClient(clientToken)
 	if err != nil {
 		// this happens when a client is not registered with this instance.
 		// the same userid could be registered with another instance. The problem
@@ -83,7 +83,7 @@ func CloseGroundStationClient(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("CloseConn - %s\n", err.Error())
 		return
 	}
-	LaunchHUB.unregister <- client
+	GrndStationHUB.unregister <- client
 }
 
 // setClientKey ---------------------------------------------------------------
@@ -96,13 +96,28 @@ func setClientKey(ws *websocket.Conn, id string) string {
 // streams the content of telemetry queue to client
 // -----------------------------------------------------------------------------
 func WriteLaunchTelemetry(client *CLIENT) {
-	var dp data.DataPoint
+	var dp [data.PACKET_GRP]data.DataPoint
 	var err error
 	for {
-		if dp, err = client.Cursor.ReadPacket(); err != nil {
+		if dp, err = client.Cursor.ReadGrpPacket(); err != nil {
 			fmt.Println(err)
 		} else {
-			client.Socket.WriteMessage(websocket.BinaryMessage, (*(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(&dp)))[:data.DATAPOINT_SIZE])
+			client.Socket.WriteMessage(websocket.BinaryMessage, (*(*[data.DATAPOINT_SIZE * data.PACKET_GRP]byte)(unsafe.Pointer(&dp[0])))[:data.DATAPOINT_SIZE * data.PACKET_GRP])
+		}
+	}
+}
+
+func WriteLaunchTelemetryByDataPoint(client *CLIENT) {
+	var dp [data.PACKET_GRP]data.DataPoint
+	var err error
+	for {
+		if dp, err = client.Cursor.ReadGrpPacket(); err != nil {
+			fmt.Println(err)
+		} else {
+			for k := range dp {
+				client.Socket.WriteMessage(websocket.BinaryMessage, (*(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(&dp[k])))[:data.DATAPOINT_SIZE])
+			}
+//			client.Socket.WriteMessage(websocket.BinaryMessage, (*(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(&dp)))[:data.DATAPOINT_SIZE])
 		} 
 	}
 }
@@ -121,7 +136,7 @@ func DetectClientDisconnection(client *CLIENT) {
 			fmt.Printf("stream-key(%s): Connection dropped  - %s\n", client.ClientToken, err.Error())
 			client.ReadErr = true
 			ever = false
-			LaunchHUB.unregister <- client
+			GrndStationHUB.unregister <- client
 		}
 	}
 }

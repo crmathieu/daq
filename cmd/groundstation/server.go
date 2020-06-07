@@ -46,16 +46,16 @@ func main() {
 			}
 		}
 	}
-	LaunchHUB = NewHub()
+	GrndStationHUB = NewHub()
 
 	// set up a http server to manage data streaming to clients
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir(PATH_2_ROOT + "/assets"))
 	mux.Handle("/", fs)
-	mux.HandleFunc("/stream/", serveHome(home))
-	mux.HandleFunc("/ws/", NewGroundStationClient)
-	mux.HandleFunc("/wr/", NewGroundStationRelay)
-	mux.HandleFunc("/wc/", CloseGroundStationClient)
+	mux.HandleFunc("/stream/", 	serveHome(home))
+	mux.HandleFunc("/ws/", 		NewGroundStationClient)
+	mux.HandleFunc("/wr/", 		NewGroundStationRelay)
+	mux.HandleFunc("/wc/", 		CloseGroundStationClient)
 
 	server := &http.Server{
 		Addr: grdserver + ":" + webport,
