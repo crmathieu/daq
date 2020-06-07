@@ -1,6 +1,5 @@
 # daq
-Daq is an attempt to simulate the flow of data between a rocket and a ground station during a launch (it could be any type of vehicle that requires a form of data transmission). The ground station, in turn, streams the data to clients that connect to it using an authentication token.
-
+Daq is an attempt to evaluate how data generated during a rocket launch can be captured and processed with the help of a ground station (it could be any type of vehicle that requires a form of data transmission). The ground station, in turn, streams the data to clients that connect to it using an authentication token.
 
 ### Vehicle
 In this simulation, we use the dynamics of a rocket launch to generate the data. This data is sent to the ground station that has any number of client connected to it. Clients are receiving the data through a permanent websocket connection allowing for "realtime data processing". Upon arrival to the client, the data can be used to visualize what the vehicle is doing or can be logged for later processing.
