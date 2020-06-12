@@ -83,7 +83,7 @@ and then
 > ./launch
 ```
 
-As the vehicle code starts crunching data, the downlink goroutine wakes up every 10 milliseconds to read critical variables values (sensors) and packages them into datapoints. When there are enough datapoints to fill a packet, a CRC32 is calculated on the datapoints only and saved in the packet header, along with the current time and the number of datapoints in the packets. The packet is then sent to the ground station.
+As the vehicle code starts crunching data, the downlink data Muxer goroutine wakes up every 10 milliseconds to read critical variables values (sensors) and packages them into datapoints. When there are enough datapoints to fill a packet, a CRC32 is calculated on the datapoints only and saved in the packet header, along with the current time and the number of datapoints in the packets. The packet is then sent to the ground station.
 
 From now on, you should see data coming to your client.
 
