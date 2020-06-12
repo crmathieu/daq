@@ -5,7 +5,7 @@ This system could be used for any type of vehicle that requires a form of data t
 
 
 ### Vehicle
-In this simulation, the dynamics of a rocket launch is used to generate the data. This data is collected by a daemon subroutine at specific time intervals. Datapoints containing specific rocket information are multiplexed in data packets and sent to a ground station that has a number of clients connected to it. Clients are receiving data through a permanent **_websocket_** connection allowing for "**realtime data processing**". As the data is coming to the client, it can be used to visualize and evaluate how the vehicle is performing -or- can be logged for later processing.
+In this simulation, the dynamics of a rocket launch is used to generate the data. This data is collected by a daemon subroutine at regular time intervals. Datapoints containing specific rocket information are multiplexed in data packets and sent to a ground station that has a number of clients connected to it. Clients receive data through a permanent **_websocket_** connection allowing for "**realtime data processing**". As the data is coming to the client, it can be used to visualize and evaluate how the vehicle is performing -or- can be logged for later processing.
 
 
 ### Data format
