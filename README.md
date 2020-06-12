@@ -27,8 +27,8 @@ offset  7:  the timestamp on 64bits
 offset 15:  1 reserved byte
 ```
 
-A data packet has a default length of 256 bytes and therefore can hold up to (256/16) - 1 = **15** datapoints.
-If the vehicle needs to send more datapoints than a packet can hold, the vehicle data muxer will automatically take car of breaking down the whole set of datapoints though multiple packets. Of course, it is also possible to create longer packets to hold more datapoints.
+A data packet payload has a default length of 256 bytes and therefore can hold up to 256 / 16 = **16** datapoints.
+Since the vehicle needs to send more datapoints than a packet can hold, the vehicle data muxer will automatically take car of breaking down the whole set of datapoints though multiple packets. It is also possible to create longer packets to hold more datapoints by changing in the file _daq/packages/data/packet.go_ the value of the constant **PACKET_PAYLOAD_LENGTH** to a multiple of 256.
 
 
 ### Ground station
@@ -47,7 +47,7 @@ To create the simulation, you will need to run 2 processes:
 - the _groundstation_ process
 - the _vehicle_ process  
 
-These processes do not need to run on the same CPU. If you try to run them on 2 different computers, make sure to update the downlink server string (in the daq/packages/data.go file) with the proper network address, so that the vehicle can reach the ground station.
+These processes do not need to run on the same CPU. If you try to run them on 2 different computers, make sure to update the downlink server string constant **DOWNLINK_SERVER** (in the _daq/packages/data/types.go_ file) with the proper network address, so that the vehicle can reach the ground station.
 
 
 ### 1 - Start the ground station
