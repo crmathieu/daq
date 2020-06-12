@@ -2,18 +2,18 @@
 Daq is an attempt to evaluate how data generated during a rocket launch can be captured and processed with the help of a ground station (it could be any type of vehicle that requires a form of data transmission). The ground station, in turn, streams the data to clients that connect to it using an authentication token.
 
 ### Vehicle
-In this simulation, the dynamics of a rocket launch is used to generate the data. This data is sent to a ground station that has any number of client connected to it. Clients are receiving the data through a permanent websocket connection allowing for "realtime data processing". As the data is coming to the client, it can be used to visualize what the vehicle is doing -or- can be logged for later processing.
+In this simulation, the dynamics of a rocket launch is used to generate the data. This data is sent to a ground station that has any number of clients connected to it. Clients are receiving the data through a permanent websocket connection allowing for "realtime data processing". As the data is coming to the client, it can be used to visualize what the vehicle is doing -or- can be logged for later processing.
+
+
+### Data format
+To avoid unecessary overhead in packaging payload with _marhsalling / unmarshalling_ techniques, the data is always sent in binary form. It is received as an array of bytes and then casted appropriately based on the nature of its content. Each data packet contains a header holding information pertaining to its payload. To make sure no error occurred during transmission, a CRC32 is calculated on the payload only and stored in the header's packet before sending it. In addition to the CRC32 value, a timestamp and the number of datapoints stored in the payload complete the header section. 
 
 
 ### Ground station
 The ground station has 3 functions:
 - Make sure there were no error in the data received from the vehicle (comparing CRC32 calculated and CRC32 transmitted). 
 - Place the set of datapoints received to its streaming queue.
-- Accept connection requests from clients to allow them to access the streaming data. Clients have the choice to access the stream from the most recent data, or the oldest data (TBI). 
-
-
-### Data format
-To avoid unecessary overhead in packaging payload with _marhsalling / unmarshalling_ technics, the data is always sent in binary format. It is received as an array of bytes and then casted appropriately based on the nature of its content. 
+- Accept connection requests from clients to allow them to access the streaming data. When connecting, clients have the choice to access the stream from its most recent data, or from its oldest data (TBI). 
 
 
 

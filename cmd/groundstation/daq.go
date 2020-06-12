@@ -94,23 +94,22 @@ func (daq *Daq) ReadDownlinkPackets(c net.Conn) {
         }
 		consecutiveErr = 0
 
-		/*if n > 81920 {
-			log.Printf("BUFFER OVERFLOW %d bytes read in %s", totalBytes, time.Now().Sub(start))
+		if n > 81920 {
+			fmt.Printf("BUFFER OVERFLOW %d bytes read in %s", totalBytes, time.Now().Sub(start))
 			c.Close()
-		}*/
+		}
 
-		daq.demuxDataPoints(&tbuf, n)
+		daq.QueueDataPoints(&tbuf, n)
 		totalBytes += n
     }
     fmt.Printf("%d bytes read in %s", totalBytes, time.Now().Sub(start))
     c.Close()
 }
 
-// demuxDataPoints ------------------------------------------------------------
-// from the number of datapoints value found in the packet header, reads each
-// datapoint and save it in DAQ streamer
+// QueueDataPoints ------------------------------------------------------------
+// saves group of datapoints in DAQ streamer
 // ----------------------------------------------------------------------------  
-func (daq *Daq) demuxDataPoints(pk *[]byte, size int) {
+func (daq *Daq) QueueDataPoints(pk *[]byte, size int) {
 
 	numberDP := *(*byte)(unsafe.Pointer(&(*pk)[data.PACKET_NDP_OFFSET]))
 
@@ -127,7 +126,7 @@ func (daq *Daq) demuxDataPoints(pk *[]byte, size int) {
 
 }
 /*
-func (daq *Daq) demuxDataPoints(pk *[]byte, size int) {
+func (daq *Daq) QueueDataPoints(pk *[]byte, size int) {
 
 	numberDP := *(*byte)(unsafe.Pointer(&(*pk)[data.PACKET_NDP_OFFSET]))
 
