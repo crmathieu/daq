@@ -1,9 +1,11 @@
 # daq
-Daq is an attempt to solve the problem of packaging and transmitting data during a rocket launch, and capturing this data with the help of a ground station. The ground station, in turn, streams the data to clients that connect to it with an authentication token. This system could be used for any type of vehicle that requires a form of data transmission with a static station.
+Daq is an attempt to solve the problem of packaging and transmitting data during a rocket launch. This data is then captured with the help of a ground station and passed along to client applications for consumption. Clients connect to the ground station with an _authentication token_. If the authentication is accepted, data starts streaming. 
+
+This system could be used for any type of vehicle that requires a form of data transmission with a static station.
 
 
 ### Vehicle
-In this simulation, the dynamics of a rocket launch is used to generate the data. This data is sent to a ground station that has any number of clients connected to it. Clients are receiving the data through a permanent websocket connection allowing for "realtime data processing". As the data is coming to the client, it can be used to visualize what the vehicle is doing -or- can be logged for later processing.
+In this simulation, the dynamics of a rocket launch is used to generate the data. This data is collected by a daemon subroutine at specific time intervals. Datapoints containing specific rocket information are multiplexed in data packets and sent to a ground station that has a number of clients connected to it. Clients are receiving data through a permanent **_websocket_** connection allowing for "**realtime data processing**". As the data is coming to the client, it can be used to visualize and evaluate how the vehicle is performing -or- can be logged for later processing.
 
 
 ### Data format
@@ -66,7 +68,7 @@ A javascript client example is provided. It can be run from a web browser by typ
 localhost:1969/stream/123
 ```
 - *1969* is the default web port from which you can request a connection 
-- *123* is the authentication token you must provide to access the service.
+- *123* is the authentication token you must provide to access the service. The authentication is super minimalistic as it is not the main goal of this project.
 
 You should get a static looking page showing you some blank values, as the vehicle hasn't launched yet.
 
