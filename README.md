@@ -1,5 +1,5 @@
 # daq
-Daq is an attempt to solve the problem of packaging and transmitting data during a rocket launch. This data is then captured with the help of a ground station and passed along to client applications for consumption. Clients connect to the ground station with an _authentication token_. If the authentication is accepted, data starts streaming. 
+Daq is an attempt to solve the problem of packaging and transmitting data generated during a rocket launch to a ground based station, which captures the data and passed it along to client applications for consumption. Clients connect to the ground station with an _authentication token_. If the authentication is accepted, data starts streaming. 
 
 This system could be used for any type of vehicle that requires a form of data transmission with a static station.
 
@@ -28,7 +28,7 @@ offset 15:  1 reserved byte
 ```
 
 A data packet payload has a default length of 256 bytes and therefore can hold up to 256 / 16 = **16** datapoints.
-Since the vehicle needs to send more datapoints than a packet can hold, the vehicle data muxer will automatically take car of breaking down the whole set of datapoints though multiple packets. It is also possible to create longer packets to hold more datapoints by changing in the file _daq/packages/data/packet.go_ the value of the constant **PACKET_PAYLOAD_LENGTH** to a multiple of 256.
+Since the vehicle needs to send more datapoints than a packet can hold, the vehicle data muxer will automatically take car of breaking down the whole set of datapoints though multiple packets. It is also possible to create longer packets to hold more datapoints by changing the value of the constant **PACKET_PAYLOAD_LENGTH** to a multiple of 256 in the file _daq/packages/data/packet.go_.
 
 
 ### Ground station
@@ -47,7 +47,7 @@ To create the simulation, you will need to run 2 processes:
 - the _groundstation_ process
 - the _vehicle_ process  
 
-These processes do not need to run on the same CPU. If you try to run them on 2 different computers, make sure to update the downlink server string constant **DOWNLINK_SERVER** (in the _daq/packages/data/types.go_ file) with the proper network address, so that the vehicle can reach the ground station.
+These processes do not need to run on the same CPU. If you try to run them on 2 different computers, make sure to update in the _daq/packages/data/types.go_ file the downlink server string constant **DOWNLINK_SERVER** with the proper network address, so that the vehicle can reach the ground station.
 
 
 ### 1 - Start the ground station
