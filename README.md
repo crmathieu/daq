@@ -37,7 +37,15 @@ The ground station has 3 functions:
 
 
 
+
 # Visualize the data coming from the vehicle
+
+
+To create the simulation, you will need to run 2 processes:
+- the _groundstation_ process
+- the _vehicle_ process  
+
+These processes do not need to run on the same CPU. If you try to run them on 2 different computers, make sure to update the downlink server string (in the daq/packages/data.go file) so that the vehicle can communicate with the ground station server properly.
 
 
 ### 1 - Start the ground station
@@ -60,7 +68,7 @@ localhost:1969/stream/123
 - *1969* is the default web port from which you can request a connection 
 - *123* is the authentication token you must provide to access the service.
 
-You should get a page showing you not much, as the vehicle hasn't been launched yet.
+You should get a static looking page showing you some blank values, as the vehicle hasn't launched yet.
 
 
 ### 3 - Launch the rocket
@@ -72,6 +80,7 @@ and then
 ```bash
 > ./launch
 ```
+
 As the vehicle code starts crunching data, the downlink goroutine wakes up every 10 milliseconds to read critical variables values (sensors) and packages them into datapoints. When there are enough datapoints to fill a packet, a CRC32 is calculated on the datapoints only and saved in the packet header, along with the current time and the number of datapoints in the packets. The packet is then sent to the ground station.
 
 From now on, you should see data coming to your client.
