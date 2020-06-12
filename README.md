@@ -1,12 +1,32 @@
 # daq
 Daq is an attempt to evaluate how data generated during a rocket launch can be captured and processed with the help of a ground station (it could be any type of vehicle that requires a form of data transmission). The ground station, in turn, streams the data to clients that connect to it using an authentication token.
 
+
 ### Vehicle
 In this simulation, the dynamics of a rocket launch is used to generate the data. This data is sent to a ground station that has any number of clients connected to it. Clients are receiving the data through a permanent websocket connection allowing for "realtime data processing". As the data is coming to the client, it can be used to visualize what the vehicle is doing -or- can be logged for later processing.
 
 
 ### Data format
-To avoid unecessary overhead in packaging payload with _marhsalling / unmarshalling_ techniques, the data is always sent in binary form. It is received as an array of bytes and then casted appropriately based on the nature of its content. Each data packet contains a header holding information pertaining to its payload. To make sure no error occurred during transmission, a CRC32 is calculated on the payload only and stored in the header's packet before sending it. In addition to the CRC32 value, a timestamp and the number of datapoints stored in the payload complete the header section. 
+To avoid unecessary overhead in packaging payload with _marhsalling / unmarshalling_ techniques, the data is always sent in binary form. It is received as an array of bytes and then casted appropriately based on the nature of its content.  
+
+
+### data point
+Each data point consists of a 16 bytes buffer containing a datapoint Id and, depending on the datapoint, a combination of values held on 4 bytes (int32, uint32, float32).  
+
+
+### data packet
+A data packet is a set of datapoints put together and send to the ground station as a whole. Each data packet contains a 16 bytes header holding information pertaining to its payload. To make sure no error occurred during transmission, a CRC32 is calculated on the payload only and stored in the header's packet before sending it. In addition to the CRC32 value, a timestamp and the number of datapoints stored in the payload complete the header section:
+
+```text
+offset  0:  packet marker
+offset  2:  32bits CRC calculated on the payload only
+offset  6:  the number of datapoints in this packet
+offset  7:  the timestamp on 64bits
+offset 15:  1 reserved byte
+```
+
+A data packet has a default length of 256 bytes and therefore can hold up to (256/16) - 1 = **15** datapoints.
+If the vehicle needs to send more datapoints than a packet can hold, the vehicle data muxer will automatically take car of breaking down the whole set of datapoints though multiple packets. Of course, it is also possible to create longer packets to hold more datapoints.
 
 
 ### Ground station
@@ -57,19 +77,6 @@ As the vehicle code starts crunching data, the downlink goroutine wakes up every
 From now on, you should see data coming to your client.
 
 
-### data point
-Each data point consists of a 16 bytes buffer containing a datapoint Id and, depending on the datapoint, a combination of values held on 4 bytes (int32, uint32, float32).  
-
-
-### data packet
-A data packet is a set of datapoints put together and send to the ground station as a whole. A packet also contains a header holding some information about the packet:
-```text
-offset  0:  packet marker
-offset  2:  32bits CRC calculated on the payload only
-offset  6:  the number of datapoints in this packet
-offset  7:  the timestamp on 64bits
-offset 15:  1 reserved byte
-```
 
 ![alt text](./daq.png)
 
