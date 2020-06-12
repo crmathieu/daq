@@ -1,5 +1,5 @@
 # daq
-Daq is an attempt to evaluate how data generated during a rocket launch can be captured and processed with the help of a ground station (it could be any type of vehicle that requires a form of data transmission). The ground station, in turn, streams the data to clients that connect to it using an authentication token.
+Daq is an attempt to solve the problem of packaging and transmitting data during a rocket launch, and capturing this data with the help of a ground station. The ground station, in turn, streams the data to clients that connect to it with an authentication token. This system could be used for any type of vehicle that requires a form of data transmission with a static station.
 
 
 ### Vehicle
