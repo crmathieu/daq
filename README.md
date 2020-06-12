@@ -45,7 +45,7 @@ To create the simulation, you will need to run 2 processes:
 - the _groundstation_ process
 - the _vehicle_ process  
 
-These processes do not need to run on the same CPU. If you try to run them on 2 different computers, make sure to update the downlink server string (in the daq/packages/data.go file) so that the vehicle can communicate with the ground station server properly.
+These processes do not need to run on the same CPU. If you try to run them on 2 different computers, make sure to update the downlink server string (in the daq/packages/data.go file) with the proper network address, so that the vehicle can reach the ground station.
 
 
 ### 1 - Start the ground station
