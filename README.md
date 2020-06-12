@@ -1,4 +1,4 @@
-# daq
+# DAQ
 Daq is an attempt to solve the problem of packaging and transmitting data generated during a rocket launch to a ground based station, which captures the data and passed it along to client applications for consumption. Clients connect to the ground station with an _authentication token_. If the authentication is accepted, data starts streaming. 
 
 This system could be used for any type of vehicle that requires a form of data transmission with a static station.
@@ -12,11 +12,11 @@ In this simulation, the dynamics of a rocket launch is used to generate the data
 To avoid unecessary overhead in packaging payload with _marhsalling / unmarshalling_ techniques, the data is always sent in binary form. It is received as an array of bytes and then casted appropriately based on the nature of its content.  
 
 
-### data point
+### Data point
 Each data point consists of a 16 bytes buffer containing a datapoint Id and, depending on the datapoint, a combination of values held on 4 bytes (int32, uint32, float32).  
 
 
-### data packet
+### Data packet
 A data packet is a set of datapoints put together and send to the ground station as a whole. Each data packet contains a 16 bytes header holding information pertaining to its payload. To make sure no error occurred during transmission, a CRC32 is calculated on the payload only and stored in the header's packet before sending it. In addition to the CRC32 value, a timestamp and the number of datapoints stored in the payload complete the header section:
 
 ```text
