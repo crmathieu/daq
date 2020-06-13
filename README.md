@@ -114,6 +114,5 @@ http://localhost:6809/stream/123
 ```
 
 ### Note
-```
 The current code assumes that relay and ground station operate using the same domain name as the server network address specified after the -r flag is used to connect to the ground station too. 
-```
+
