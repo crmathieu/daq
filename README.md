@@ -100,17 +100,20 @@ The diagram shows a third component not mentioned yet: **_the Relay_**. The rela
 
 The relay code is essentially the same as the ground station except that it doesn't listen for data on the downlink. Instead, it relies on a websocket connection with the ground station just as any another client would. The relay has its own streaming queue on which the ground station oncoming data is written to. Clients connect to the relay using the same syntax as for the ground station, but with a variation in webport values.
 
-To start a relay:
+To start the groundstation code as a relay:
 ```bash
 > ./groundstation -r localhost -wp 6809
 ```
+Command flags:
+- -r : Relay server ip
+- -wp: web port used by clients to access the relay
 
-This will start a relay and allow web client to connect to it using the request:
+This will start a relay on _localhost:6809_ and allow web client to connect to it using the request:
 ```
 http://localhost:6809/stream/123
 ```
 
 ### Note
 ```
-The current code assumes that relay and ground station operate using the same domain name. 
+The current code assumes that relay and ground station operate using the same domain name as the server network address specified after the -r flag is used to connect to the ground station too. 
 ```
