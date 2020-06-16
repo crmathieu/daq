@@ -116,3 +116,6 @@ http://localhost:6809/stream/123
 ### Note
 The current code assumes that relay and ground station operate using the same domain name as the server network address specified after the -r flag is used to connect to the ground station too. 
 
+
+### Future improvement
+Instead of adding more flags to the command line to include more functionalities, a better approach could be to have only one **-f** parameter followed by a _configuration file_ that would contain all the required information for the relay to properly connect to the ground station.
