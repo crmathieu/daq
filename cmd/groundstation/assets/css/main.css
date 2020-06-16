@@ -1,5 +1,10 @@
 html, body {}
 
+.wrapper {
+  max-width: 800px;
+  margin: auto;
+}
+
 :root {
   --font-size: 40px;
   --image-size: 200px;
