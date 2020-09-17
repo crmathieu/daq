@@ -1,5 +1,5 @@
 # DAQ
-Daq is an attempt to solve the problem of packaging and transmitting data points generated during a rocket launch to a ground based station. The station captures the data and passed it along to client applications for consumption. Clients connect to the ground station using an _authentication token_ to start receiving the stream of data.
+Daq provides a possible solution to package and transmit data from a vehicle to a fixed station. The station captures the data and passed it along to client applications for consumption. Clients connect to the ground station using an _authentication token_ to start receiving the stream of data.
 
 This system could be used for any type of vehicle that requires a form of data transmission with a static station.
 
