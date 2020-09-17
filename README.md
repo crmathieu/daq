@@ -35,7 +35,7 @@ Since the vehicle needs to send more data points than a packet can hold, the veh
 The ground station has 3 functions:
 - Make sure there was no error in the data received from the vehicle (comparing CRC32 calculated and CRC32 transmitted). 
 - Place the set of data points received to its streaming queue.
-- Accept connection requests from clients to allow them to access the streaming data. When connecting, clients have the choice to access the stream from its most recent data, or from its oldest data (TBI). The ground station maintain a list of connected clients and manage that list as clients connect or disconnect. A client is known in the list by an auto generated client token value obtained during the establishment of the websocket connection.
+- Accept connection requests from clients to allow them to access the data stream. When connecting, clients have the choice to access the stream from its most recent data, or from its oldest (TBI). The ground station maintain a list of connected clients and manage that list as clients connect or disconnect. A client is known in the list by an auto generated client token value obtained during the establishment of the websocket connection.
 
 
 
