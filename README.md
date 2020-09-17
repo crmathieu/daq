@@ -28,12 +28,12 @@ offset 15:  1 reserved byte
 ```
 
 A data packet payload has a default length of 256 bytes and therefore can hold up to 256 / 16 = **16** data points.
-Since the vehicle needs to send more data points than a packet can hold, the vehicle data muxer will automatically take care of breaking down the set of data points though multiple packets. It is also possible to create longer packets to hold more data points by changing the value of the constant **PACKET_PAYLOAD_LENGTH** to a multiple of 256 in the file _daq/packages/data/packet.go_.
+Since the vehicle needs to send more data points than a packet can hold, the vehicle data muxer will automatically take care of breaking down the set of data points across multiple packets. It is also possible to create longer packets to hold more data points by changing the value of the constant **PACKET_PAYLOAD_LENGTH** to a multiple of 256 in the file _daq/packages/data/packet.go_.
 
 
 ### Ground station
 The ground station has 3 functions:
-- Make sure there were no error in the data received from the vehicle (comparing CRC32 calculated and CRC32 transmitted). 
+- Make sure there was no error in the data received from the vehicle (comparing CRC32 calculated and CRC32 transmitted). 
 - Place the set of data points received to its streaming queue.
 - Accept connection requests from clients to allow them to access the streaming data. When connecting, clients have the choice to access the stream from its most recent data, or from its oldest data (TBI). The ground station maintain a list of connected clients and manage that list as clients connect or disconnect. A client is known in the list by an auto generated client token value obtained during the establishment of the websocket connection.
 
@@ -69,6 +69,12 @@ localhost:1969/stream/123
 ```
 - *1969* is the default web port from which you can request a connection 
 - *123* is the authentication token you must provide to access the service. The authentication is super minimalistic as it is not the main goal of this project.
+
+Alternately, you can also use a less crude interface by typing:
+```
+localhost:1969/test/123
+```
+which also provides the flight path angle and better graphics.
 
 You should get a static looking page showing you some blank values, as the vehicle hasn't launched yet.
 
