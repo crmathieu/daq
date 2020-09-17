@@ -8,36 +8,43 @@ import (
 	"time"
 )
 
-func (v *VEHICLE) readTiltAngle() [data.DATAPOINT_SIZE]byte {	//interface{}  {
-/*	p := (*data.SENStiltAngle)(v.Stage[v.CurrentStage].Instruments[data.STILTANGLE_OFFSET])
-	p.Angle = float32(v.Gamma * rad)
-	p.RateOfChange = float32(v.gamma_dot)
+func (v *VEHICLE) readAngles(stage int32) [data.DATAPOINT_SIZE]byte {	//interface{}  {
+	//p := (*data.SENStiltAngle)(v.Stage[v.CurrentStage].Instruments[data.STILTANGLE_OFFSET])
+	p := (*data.SENSangles)(v.Instruments[data.SANGLES_OFFSET])	
+	p.Id = Mux(stage, p.Id)
+	p.Gamma = float32(v.Stages[stage].gamma)
+	p.Beta = float32(v.Stages[stage].beta)
+	p.Alpha = float32(v.Stages[stage].alpha)
+	//p.RateOfChange = float32(v.gamma_dot)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
-	*/
-	return [data.DATAPOINT_SIZE]byte{}
+//	return [data.DATAPOINT_SIZE]byte{}
 }
 
 func (v *VEHICLE) readThrust(stage int32) [data.DATAPOINT_SIZE]byte {	//interface{}  {
 	p := (*data.SENSthrust)(v.Instruments[data.STHRUST_OFFSET])
+	p.Id = Mux(stage, p.Id)
 	p.Thrust = float32(v.Stages[stage].Thrust)
-	p.Stage = stage
+	//p.Stage = stage
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
 
 func (v *VEHICLE) readVelocity(stage int32) [data.DATAPOINT_SIZE]byte {	//interface{}  {
 	p := (*data.SENSvelocity)(v.Instruments[data.SVELOCITY_OFFSET])
-	p.Velocity = float32((v.Stages[stage].VRelative)*1e-3) //float32(v.Velocity)
+	p.Id = Mux(stage, p.Id)
+	p.Velocity = float32((v.Stages[stage].VRelative)*1e-3)
 	p.Acceleration = float32(v.Stages[stage].Acc/g0)
-	p.Stage = uint32(stage)
+	//p.Stage = uint32(stage)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
 
 func (v *VEHICLE) readPosition(stage int32) [data.DATAPOINT_SIZE]byte {	//interface{}  {
 	p := (*data.SENSposition)(v.Instruments[data.SPOSITION_OFFSET])
+	p.Id = Mux(stage, p.Id)
 	p.Range = float32((v.Stages[stage].cx)*1e-3) //float32(v.Range)
-	p.Altitude = float32((v.Stages[stage].DTF - Re) * 1e-3)//float32((v.Stages[stage].cy - Re)*1e-3)
+//	p.Altitude = float32((v.Stages[stage].DTF - Re) * 1e-3)
+	p.Altitude = float32((v.Stages[stage].cy - Re)*1e-3)
 	//p.Inclinaison = float32(0.0)
-	p.Stage = uint32(stage)
+	//p.Stage = uint32(stage)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
 
@@ -47,11 +54,13 @@ func (v *VEHICLE) readPropellantMass(stage int32) [data.DATAPOINT_SIZE]byte {	//
 //	p.Mass = v.Stages[stage].PropellantMass + v.Stage[v.CurrentStage].DryMass - p.Mflow * (v.Clock - v.ClockAtMeco)
 //	p.Mejected = p.Mflow * v.Clock
 //	p.Stage = uint32(stage) //v.CurrentStage + 1
+	p.Id = Mux(stage, p.Id)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
 }
 
 func (v *VEHICLE) readEvent(stage int32) [data.DATAPOINT_SIZE]byte {
 	p := (*data.SENSevent)(v.Instruments[data.SEVENT_OFFSET])
+	p.Id = Mux(stage, p.Id)
 	p.EventId = v.LastEvent
 	p.Time = float32(v.Stages[stage].Clock)
 	p.EventMap = v.EventsMap
@@ -60,8 +69,13 @@ func (v *VEHICLE) readEvent(stage int32) [data.DATAPOINT_SIZE]byte {
 
 func (v *VEHICLE) readTime(stage int32) [data.DATAPOINT_SIZE]byte {
 	p := (*data.SENStime)(v.Instruments[data.STIME_OFFSET])
+	p.Id = Mux(stage, p.Id)
 	p.Time = float32(v.Stages[stage].Clock)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
+}
+
+func Mux(stage int32, id uint32) uint32 {
+	return (uint32(stage) << 16)|(id & 0xffff)
 }
 
 // ReadInstruments ------------------------------------------------------------

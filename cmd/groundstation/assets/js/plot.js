@@ -41,4 +41,4 @@ function showAxes(ctx, axes) {
     ctx.moveTo(xmin, y0); ctx.lineTo(w, y0);  // X axis
     ctx.moveTo(x0, 0); ctx.lineTo(x0, h);  // Y axis
     ctx.stroke();
-}
+}   

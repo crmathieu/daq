@@ -35,16 +35,16 @@ func NewDaq(server, port, relayFrom string) *Daq {
 	if relayFrom != "" {
 		Daq.ConnListener = Daq.RelayListener
 	} else {
-		Daq.ConnListener = Daq.ListenAndServe
+		Daq.ConnListener = Daq.ListenDownlink
 	}
 	return &Daq
 }
 
 
-// ListenAndServe -------------------------------------------------------------
+// ListenDownlink -------------------------------------------------------------
 // listen to downlink connection and read packets
 // ----------------------------------------------------------------------------
-func (daq *Daq) ListenAndServe() {
+func (daq *Daq) ListenDownlink() {
 	// established downlink with launch vehicle
 	fmt.Println("listening on:", daq.Addr+":"+daq.Port)
 	srv, err := net.Listen("tcp", daq.Addr+":"+daq.Port) 
@@ -79,28 +79,37 @@ func (daq *Daq) ReadDownlinkPackets(c net.Conn) {
     tbuf := make([]byte, 81920)
     totalBytes := 0
 	consecutiveErr := 0
+	ndp := 0
+//	ticker := time.NewTicker(1000 * time.Millisecond)
 	
     for {
-		n, err := c.Read(tbuf)
-        if err != nil {
-            if err != io.EOF {
-                fmt.Printf("Read error: %s", err)
-			}
-			consecutiveErr++
-			if consecutiveErr > MAXERROR {
-				break
-			}
-            continue 
-        }
-		consecutiveErr = 0
+		select {
+//			case <-ticker.C: 
+//				fmt.Printf("ndp = %d\n", ndp)
+//				ndp = 0
+				
+			default:
+				n, err := c.Read(tbuf)
+				if err != nil {
+					if err != io.EOF {
+						fmt.Printf("Read error: %s", err)
+					}
+					consecutiveErr++
+					if consecutiveErr > MAXERROR {
+						break
+					}
+					continue 
+				}
+				consecutiveErr = 0
 
-		if n > 81920 {
-			fmt.Printf("BUFFER OVERFLOW %d bytes read in %s", totalBytes, time.Now().Sub(start))
-			c.Close()
+				if n > 81920 {
+					fmt.Printf("BUFFER OVERFLOW %d bytes read in %s", totalBytes, time.Now().Sub(start))
+					c.Close()
+				}
+
+				ndp = ndp + daq.QueueDataPoints(&tbuf, n)
+				totalBytes += n
 		}
-
-		daq.QueueDataPoints(&tbuf, n)
-		totalBytes += n
     }
     fmt.Printf("%d bytes read in %s", totalBytes, time.Now().Sub(start))
     c.Close()
@@ -109,7 +118,7 @@ func (daq *Daq) ReadDownlinkPackets(c net.Conn) {
 // QueueDataPoints ------------------------------------------------------------
 // saves group of datapoints in DAQ streamer
 // ----------------------------------------------------------------------------  
-func (daq *Daq) QueueDataPoints(pk *[]byte, size int) {
+func (daq *Daq) QueueDataPoints(pk *[]byte, size int) int {
 
 	numberDP := *(*byte)(unsafe.Pointer(&(*pk)[data.PACKET_NDP_OFFSET]))
 
@@ -123,7 +132,7 @@ func (daq *Daq) QueueDataPoints(pk *[]byte, size int) {
 	} else {
 		fmt.Println("CRC error encountered...")
 	}
-
+	return int(numberDP)
 }
 /*
 func (daq *Daq) QueueDataPoints(pk *[]byte, size int) {
@@ -148,18 +157,18 @@ func (daq *Daq) QueueDataPoints(pk *[]byte, size int) {
 // based on the datapoint Id
 // ----------------------------------------------------------------------------
 func viewPacket(dp *data.DataPoint) {
-		switch(dp.Id) {
+		switch(dp.Id & 0xffff) {
 		case data.IDVELOCITY: 	v := (*data.SENSvelocity)(unsafe.Pointer(dp))
 								fmt.Println("Vel:",v.Velocity,"m/s, Acc:", v.Acceleration)
 		case data.IDPOSITION:	v := (*data.SENSposition)(unsafe.Pointer(dp))
 								fmt.Println("Alt:", v.Altitude,"m, Range:", v.Range,"m")
 		case data.IDTHRUST:		v := (*data.SENSthrust)(unsafe.Pointer(dp))
-								fmt.Println("Thrust:", v.Thrust/1000,"kN, Stage:", v.Stage)
+								fmt.Println("Thrust:", v.Thrust/1000,"kN, Stage:", dp.Id >> 16) //v.Stage)
 //		case data.IDTILTANGLE:	v := (*data.SENStiltAngle)(unsafe.Pointer(dp))
 //								fmt.Println("Gamma:", v.Angle,"deg")
 		case data.IDMASSPROPELLANT:	v := (*data.SENSpropellantMass)(unsafe.Pointer(dp))
 								//fmt.Println("Mass:", v.Mass,"kg, Mass Flow:", v.Mflow, "kg/s, Mass Ejected:", v.Mejected)
-								fmt.Println("Mass:", v.Mass,"kg, Mass Flow:", v.Mflow, "kg/s, Stage:", v.Stage)
+								fmt.Println("Mass:", v.Mass,"kg, Mass Flow:", v.Mflow, "kg/s, Stage:", dp.Id >> 16) //v.Stage)
 
 		}
 

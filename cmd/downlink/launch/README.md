@@ -12,6 +12,7 @@ Knowing the initial conditions and the equations that determine the trajectory, 
 ### equations
 To calculate these various quantities, we first need to determine what forces are involved in the fixed referential x and y directions.
 
+
 - x direction:
 ```text
 Fx = - D * cos(alpha) - m * g * sin(beta) + T * cos(gamma)

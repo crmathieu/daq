@@ -1,7 +1,8 @@
 html, body {}
 
 .wrapper {
-  max-width: 800px;
+  max-width: 900px; /*800px;*/
+  text-align: center;
   margin: auto;
 }
 

@@ -64,6 +64,7 @@ func main() {
 	fs := http.FileServer(http.Dir(PATH_2_ROOT + "/assets"))
 	mux.Handle("/", fs)
 	mux.HandleFunc("/stream/", 	serveHome(home))
+	mux.HandleFunc("/test/", 	serveHome(homeTest))
 	mux.HandleFunc("/ws/", 		NewGroundStationClient)
 	mux.HandleFunc("/wr/", 		NewGroundStationRelay)
 	mux.HandleFunc("/wc/", 		CloseGroundStationClient)

@@ -24,6 +24,10 @@ var (
 	gsEnv string
 )
 
+const WSTEMPLATE = "./assets/index.html"
+const WSTEMPLATE_TEST = "./assets/daq.html"
+
+
 // NewGroundStationClient -----------------------------------------------------
 // establishes a websocket connection with a (browser) client
 // ----------------------------------------------------------------------------
@@ -158,7 +162,7 @@ func serveHome(page http.HandlerFunc) http.HandlerFunc {
 // homeTest -------------------------------------------------------------------
 func homeTest(w http.ResponseWriter, r *http.Request) {
 
-	homeTempl, err := template.ParseFiles("./assets/html/index.html")
+	homeTempl, err := template.ParseFiles(WSTEMPLATE_TEST)
 	if err != nil {
 		fmt.Println("Error parsing index template:")
 		panic(err)
@@ -191,7 +195,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	// notifError is to display if there was an issue getting user settings from MySQL
 	var notifError string
 
-	homeTempl, err := template.ParseFiles("./assets/index.html")
+	homeTempl, err := template.ParseFiles(WSTEMPLATE)
 	if err != nil {
 		fmt.Println("Error parsing index template:")
 		panic(err)

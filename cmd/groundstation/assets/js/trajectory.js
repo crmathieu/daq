@@ -28,6 +28,13 @@ function draw() {
     canvas = document.getElementById("DAQcanvas");
     if (null == canvas || !canvas.getContext) return;
 
+ /*   var c = document.getElementById('c');
+    var gl = canvas.getContext('webgl') || canvas.getContext("experimental-webgl");
+    gl.clearColor(0, 0, 0.8, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    return
+*/
     ctx = canvas.getContext("2d");
     axis.x0 = .5 + .5 * canvas.width;  // x0 pixels from left to x=0
 //    axes.y0 = .5 + .5 * canvas.height; // y0 pixels from top to y=0

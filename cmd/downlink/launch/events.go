@@ -7,7 +7,7 @@ import (
 	"github.com/crmathieu/daq/packages/data"
 )
 
-func (v *VEHICLE) hasEvent(event uint32) bool {
+func (v *VEHICLE) hadEvent(event uint32) bool {
 	if v.EventsMap & event != 0 {
 		return true
 	}
@@ -63,14 +63,15 @@ func (r *VEHICLE) sync_stages() {
 	r.Stages[STAGE2].beta = r.Stages[BOOSTER].beta
 	r.Stages[STAGE2].gamma = r.Stages[BOOSTER].gamma
 
-//	r.Stages[STAGE2].Clock = r.Stages[BOOSTER].Clock
-
+	// suddenly the booster is a lot lighter
+	r.Stages[BOOSTER].Mass = r.Stages[BOOSTER].Mass - r.Stages[STAGE2].Mass
 }
 
 func (r *VEHICLE) stage_sep() {
-	for i := 0; i < 2; i++ {
+	r.sync_stages()
+/*	for i := 0; i < 2; i++ {
 		r.Stages[i].Mass = r.Stages[i].Mr + r.Stages[i].Mf + r.Stages[i].Mp;
-	}
+	}*/
 	r.SysGuidance._stagesep = true
 	r.EventsMap = r.EventsMap | data.E_STAGESEP
 	r.LastEvent = data.E_STAGESEP

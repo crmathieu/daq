@@ -18,29 +18,32 @@ const E_THROTTLE_D = 0x00008000; 	// throttle engine down
 const E_THROTTLE_U = 0x00010000; 	// throttle engine up
 
 var eventMap = new Map([
-    [E_MEI_1, "main engines ignition"],
-    [E_LIFTOFF, "lift off"],
-    [E_STARTPITCH, "pitch maneuver starts"],
-    [E_MECO_1, "main engines cutoff"],
-    [E_STAGESEP, "stage separation"],
-    [E_SEI_1, "second stage engine ignition"],
-    [E_BBURNI, "first stage Boost back burn starts"],
-    [E_BBURNO, "first stage Boost back burn stops"],
-    [E_EBURNI, "first stage entry burn starts"],
-    [E_EBURNO, "first stage entry burn stops"],
-    [E_SECO_1, "second stage engine cutoff 1"],
-    [E_SEI_2, "second stage restart 1"],
-    [E_SECO_2, "second stage engine cutoff 2"],
-    [E_LBURNI, "first stage landing burn starts"],
-    [E_LBURNO, "first stage landing burn stops"],
+    [E_MEI_1, "ME Ignition"],
+    [E_LIFTOFF, "Lift off"],
+    [E_STARTPITCH, "Start pitch"],
+    [E_MECO_1, "MECO"],
+    [E_STAGESEP, "stage sep."],
+    [E_SEI_1, "SE Ignition 1"],
+    [E_BBURNI, "Boostback ON"],
+    [E_BBURNO, "Boostback OFF"],
+    [E_EBURNI, "Entryburn ON"],
+    [E_EBURNO, "Entryburn OFF"],
+    [E_SECO_1, "SECO1"],
+    [E_SEI_2, "SE Ignition 2"],
+    [E_SECO_2, "SECO2"],
+    [E_LBURNI, "Landingburn ON"],
+    [E_LBURNO, "Landingburn OFF"],
     [E_THROTTLE_U, "Throttling up"],
     [E_THROTTLE_D, "Throttling down"]
 ]);
 
+const STAGE1OFFSET = 100;
+const G = 9.81998; 
+
 // datapoint types
 const IDVELOCITY = 1;
 const IDPOSITION = 2;
-const IDTILTANGLE = 3;
+const IDANGLES = 3;
 const IDTHRUST = 4;
 const IDEVENT = 5;
 const IDMASSPROPELLANT = 6;

@@ -226,10 +226,10 @@ func (r *VEHICLE) InitGuidance() *[]Event {
 	r.Stages[BOOSTER].cy = Re
 	r.Stages[BOOSTER].DTF = Re;
 
-	r.Stages[BOOSTER].Mass = r.Stages[BOOSTER].Mr + r.Stages[STAGE2].Mr + r.Stages[BOOSTER].Mf + r.Stages[STAGE2].Mf + r.Stages[STAGE2].Mp;
-	r.Stages[STAGE2].Mass = r.Stages[BOOSTER].Mr + r.Stages[STAGE2].Mr + r.Stages[BOOSTER].Mf + r.Stages[STAGE2].Mf + r.Stages[STAGE2].Mp;
+	r.Stages[STAGE2].Mass = r.Stages[STAGE2].Mr + r.Stages[STAGE2].Mf + r.Stages[STAGE2].Mp
+	r.Stages[BOOSTER].Mass = r.Stages[BOOSTER].Mr + r.Stages[BOOSTER].Mf + r.Stages[STAGE2].Mass
 
-	file := "dm2.yml" //"profile.yml"
+	file := "profile.yml"
 	filepath := "./profiles/" + file
 	if _, err := os.Stat(filepath); err == nil {
 		// file exists
@@ -257,11 +257,11 @@ func (v *VEHICLE) initInstruments() {
 	v.Instruments = make([]unsafe.Pointer, data.INSTRUMENTS_COUNT)
 	v.Handlers	  = make([]SensorHandlers, data.INSTRUMENTS_COUNT)
 
-	v.Instruments[data.SVELOCITY_OFFSET]		= (unsafe.Pointer)(&data.SENSvelocity{		Id:data.IDVELOCITY, 	Velocity:0.0, Acceleration:0.0, Stage:0,})
-	v.Instruments[data.SPOSITION_OFFSET]		= (unsafe.Pointer)(&data.SENSposition{		Id:data.IDPOSITION, 	Range:0.0,    Stage:0, Altitude:0.0,})
+	v.Instruments[data.SVELOCITY_OFFSET]		= (unsafe.Pointer)(&data.SENSvelocity{		Id:data.IDVELOCITY, 	Velocity:0.0, Acceleration:0.0, })
+	v.Instruments[data.SPOSITION_OFFSET]		= (unsafe.Pointer)(&data.SENSposition{		Id:data.IDPOSITION, 	Range:0.0,    Altitude:0.0,})
 	v.Instruments[data.SEVENT_OFFSET]			= (unsafe.Pointer)(&data.SENSevent{			Id:data.IDEVENT, 		EventId:0,    Time:0, })
 	v.Instruments[data.STIME_OFFSET]			= (unsafe.Pointer)(&data.SENStime{			Id:data.IDTIME, 		Time:0, })
-	//v.Instruments[data.STILTANGLE_OFFSET]		= (unsafe.Pointer)(&data.SENStiltAngle{		Id:data.IDTILTANGLE, Angle:0,})
+	v.Instruments[data.SANGLES_OFFSET]			= (unsafe.Pointer)(&data.SENSangles{		Id:data.IDANGLES, 		Alpha:0.0, Beta:0.0, Gamma:0.0,})
 	//v.Instruments[data.STHRUST_OFFSET]			= (unsafe.Pointer)(&data.SENSthrust{		Id:data.IDTHRUST, Thrust:0,})
 	//v.Instruments[data.SMASSPROPELLANT_OFFSET]	= (unsafe.Pointer)(&data.SENSpropellantMass{Id:data.IDMASSPROPELLANT, Mflow: 0.0, Mass: 0.0,})
 
@@ -269,7 +269,7 @@ func (v *VEHICLE) initInstruments() {
 	v.Handlers[data.SPOSITION_OFFSET]		= SensorHandlers{ReadSensor: v.readPosition, }
 	v.Handlers[data.SEVENT_OFFSET]			= SensorHandlers{ReadSensor: v.readEvent,}
 	v.Handlers[data.STIME_OFFSET]			= SensorHandlers{ReadSensor: v.readTime,}
-	v.Handlers[data.STILTANGLE_OFFSET]		= SensorHandlers{ReadSensor: nil,} //v.readTiltAngle,}
+	v.Handlers[data.SANGLES_OFFSET]			= SensorHandlers{ReadSensor: v.readAngles,} //v.readTiltAngle,}
 	v.Handlers[data.STHRUST_OFFSET]			= SensorHandlers{ReadSensor: nil,} //v.readThrust,}
 	v.Handlers[data.SMASSPROPELLANT_OFFSET]	= SensorHandlers{ReadSensor: nil,} //v.readPropellantMass, }
 
@@ -312,8 +312,15 @@ func NewVehicle() *VEHICLE {
 			ForceX: 0.0,
 			ForceY: 0.0,
 			alpha: 0.0,
-			beta: 0.0,
-			gamma: 0.0,
+			beta: M_PI/2,
+			gamma: M_PI/2,
 		},},
 	}
+}
+
+func (v *VEHICLE) NoFuel(stage int) bool {
+	if v.Stages[stage].Mf < 5 {
+		return true
+	}
+	return false
 }

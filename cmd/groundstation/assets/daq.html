@@ -3,11 +3,215 @@
 
 <head>
     <title>Data Acquisition</title>
-    <script type="text/javascript" src="../js/plot.js"></script>
+    <!-- script type="text/javascript" src="../js/primitives.js?1"></script -->
+    <link rel="stylesheet" href="../css/main.css?1">
+    <script type="text/javascript" src="../js/events.js?12"></script>
+    <script type="text/javascript" src="../js/daq.js?25"></script>
+    <script type="text/javascript" src="../js/websocket.js?20"></script>
 </head>
 
-<body onload="draw()">
-    <canvas id="canvas" width="502" height="108"></canvas>
+<body>
+    <div id="error_message">
+        <p>{{.Error}}</p>
+    </div>
+
+    <!-- div style="width:200px;display:inline-block;">
+        Time: <div id="time"></div><br>
+        <div>BOOSTER</div>
+        Velocity (km/h): <div id="Velocity_0"></div>
+        Accelera:<div id="Acceleration_0"></div>
+        Range (km): <div id="Range_0"></div>
+        Altitude (km): <div id="Altitude_0"></div>
+        <br>
+        <div>STAGE-2</div>
+        Velocity (km/h): <div id="Velocity_1"></div>
+        Accelera:<div id="Acceleration_1"></div>
+        Range (km): <div id="Range_1"></div>
+        Altitude (km): <div id="Altitude_1"></div>
+        <br>
+        Events: <div id="EventsList"></div>
+    </div -->
+    <div style="width:100%; text-align:center;">
+        <div class="wrapper">
+        <!-- div style="display:inline-block;" -->
+            <!-- canvas id="DAQcanvas" width="1000" height="550"></canvas -->
+            <canvas id="DAQcanvas" width="700" height="200" style="border:1px solid #d3d3d3;"></canvas>
+            <canvas id="EVENTScanvas" width="150" height="500" style="float:right;border:1px solid #d3d3d3;"></canvas>
+            <div style="display:inline-block;text-align:left;border:0px solid #d3d3d3;width:700px;">
+                <canvas id="FPBOOSTERcanvas" width="100" height="125" style="border:1px solid #d3d3d3;"></canvas>
+                <canvas id="FPSTAGE1canvas" width="100" height="125" style="border:1px solid #d3d3d3;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="plotContainer"></div>
+
+    <script type="text/javascript">
+        //const uid = document.getElementById("uid");
+
+        var websocketServerAddr = "{{.SocketType}}://{{.Host}}/ws/{{.ClientToken}}";
+        var clientToken = "{{.ClientToken}}";
+        var daq = new DAQ(websocketServerAddr, clientToken);
+        start(websocketServerAddr);
+
+/*
+
+        var boosterPos = new position();
+        var stage2Pos = new position();
+        stage2Pos.set(-1, -1);
+
+
+        //////////
+        var eventHist = 0;
+        var nsec = 0;
+        var timeHist = -20;
+        var initStage2Position = false;
+        var timerId = 0;
+        var restartId = 0;
+        var timeout = 60000;
+        var restartTO = 75000;
+        var isConnOpen = false;
+        var bigEndian = isBigEndian()
+
+        var websockURL = "{{.SocketType}}://{{.Host}}/ws/{{.ClientToken}}";
+
+        var boosterPos = new position();
+        var stage2Pos = new position();
+        stage2Pos.set(-1, -1);
+
+        function isBigEndian() {
+            const array = new Uint8Array(4);
+            const view = new Uint32Array(array.buffer);
+            return !((view[0] = 1) & array[0]);
+        }
+
+        function keepAlive(ws) {
+            if (ws.readyState == ws.OPEN) {
+                ws.send('_keepalive_');
+            }
+            timerId = setTimeout(keepAlive, timeout, ws);
+        }
+
+        function cancelKeepAlive() {
+            if (timerId) {
+                clearTimeout(timerId);
+            }
+        }
+
+        function restartConnection() {
+            if (!isConnOpen) {
+                console.log('Reconnecting WebSocket...');
+                start(websockURL)
+                restartId = setTimeout(restartConnection, restartTO);
+            } else {
+                if (restartId) {
+                    clearTimeout(restartId)
+                }
+            }
+        }
+
+        function start(websocketServerAddr) {
+            // first let the user know if there has been an issue on the backend
+            if (!{{.Error}}) {
+                errMessage.innerHTML = {{.Error }};
+            }
+
+        conn = new WebSocket(websocketServerAddr);
+        conn.binaryType = 'arraybuffer';
+        draw();
+        boosterPos.setScale();
+        stage2Pos.setScale();
+
+        //-----------------------------------------------------------------------
+        conn.onopen = function (evt) {
+            isConnOpen = true
+            console.log('%c {{.ClientToken}} \n IS LIVE!',
+                'font-weight: bold; font-size: 50px;color: red; text-shadow: 3px 3px 0 rgb(217,31,38) , 6px 6px 0 rgb(226,91,14) , 9px 9px 0 rgb(245,221,8) , 12px 12px 0 rgb(5,148,68) , 15px 15px 0 rgb(2,135,206) , 18px 18px 0 rgb(4,77,145) , 21px 21px 0 rgb(42,21,113)'
+            );
+            conn.send({{.ClientToken }});
+        timerId = setTimeout(keepAlive, timeout, conn);
+      };
+
+        //---------------------------------------------WebSocket--------------------------
+        conn.onmessage = function (evt) {
+            const PACKET_SIZE = 16;
+            const PACKET_GRP = 16; //2;
+
+            dataset = evt.data
+            let littleEndian = !bigEndian
+            let offset = 0;
+
+            for (; offset <= (PACKET_GRP - 1) * PACKET_SIZE; offset += PACKET_SIZE) {
+                let dataView = new DataView(dataset, offset, PACKET_SIZE); //evt.data)
+
+                var packetType = dataView.getUint32(0, littleEndian)
+                switch (packetType) {
+                    case IDVELOCITY: // velocity:	Id, Velocity, Acceleration, Stage
+                        //let velocityView = new Float32Array(evt.data, 2, 2);
+                        var stage = dataView.getInt32(12, littleEndian).toString();
+                        //document.getElementById("Stage").innerHTML = dataView.getInt32(12, littleEndian).toString(); 
+                        document.getElementById("Velocity_" + stage).innerHTML = (dataView.getFloat32(4, littleEndian) * 3600).toFixed(2); //velocityView[0];
+                        document.getElementById("Acceleration_" + stage).innerHTML = dataView.getFloat32(8, littleEndian).toFixed(2); //velocityView[1];
+                        console.log(evt.data);
+                        break;
+
+                    case IDPOSITION: // position: 	Id, Range, Altitude, Stage
+                        var stage = dataView.getInt32(12, littleEndian).toString();
+
+                        document.getElementById("Range_" + stage).innerHTML = dataView.getFloat32(4, littleEndian).toFixed(2); //positionView[0];
+                        document.getElementById("Altitude_" + stage).innerHTML = dataView.getFloat32(8, littleEndian).toFixed(2); //positionView[1];
+
+                        if (stage == 0) {
+                            boosterPos.plot(ctx, axis, "red", 3, dataView.getFloat32(4, littleEndian), dataView.getFloat32(8, littleEndian));
+                        } else {
+                            stage2Pos.plot(ctx, axis, "green", 3, dataView.getFloat32(4, littleEndian), dataView.getFloat32(8, littleEndian));
+                        }
+                        break;
+
+                    case IDTIME:
+                        var time = dataView.getFloat32(4, littleEndian);
+                        nsec = Math.round(time);
+                        if (nsec > timeHist) {
+                            document.getElementById("time").innerHTML = new Date(nsec * 1000).toISOString().substr(11, 8) + " (" + nsec.toString() + ")";
+                            timeHist = nsec;
+                        }
+                        break;
+
+                    case IDEVENT:
+                        var eventID = dataView.getInt32(4, littleEndian);
+                        eventHist = dataView.getInt32(12, littleEndian);
+                        if (lastEvent != eventID) {
+                            document.getElementById("EventsList").innerHTML += "<br>" + eventMap.get(eventID) + " (" + nsec + ")";
+                            lastEvent = eventID;
+                        }
+                        if ((eventHist & E_STAGESEP) && !initStage2Position) {
+                            stage2Pos.set(boosterPos.x, boosterPos.y);
+                            initStage2Position = true;
+                        }
+
+                    default: // ignore for now
+                    // let thrustView = new Float32Array(evt.data, 2, 1);
+                    // let stageView = new Uint8Array(evt.data, 6, 1);
+                }
+            }
+        };
+
+        //-----------------------------------------------------------------------
+        conn.onclose = function (evt) {
+            isConnOpen = false;
+            cancelKeepAlive()
+            if (evt.code === 1006) {
+                // 1006 is abnormal disconnect - Try to reconnect in 2 seconds
+                //restartId = setTimeout(restartConnection, 1000);
+                start(websockURL)
+            }
+        };
+    }
+
+        // start websocket connection
+        start(websockURL);*/
+
+    </script>    
 </body>
 
 </html>

@@ -41,10 +41,10 @@ func (r *VEHICLE) grav_turn(i int32) {
 	Trial and error. Lots of corrections for ultra steep trajectory.
 */
 
-//	if r.Stages[STAGE2].VRelative > 2200 {
-//		r.Stages[STAGE2].ThrottleRate = 0.7				// Throttle down to 70%
-//	}
-	if r.Stages[STAGE2].VRelative > 2900 {
+/*	if r.Stages[STAGE2].VRelative > 2200 {
+		r.Stages[STAGE2].ThrottleRate = 0.7				// Throttle down to 70%
+	}
+*/	if r.Stages[STAGE2].VRelative > 2900 {
 		r.Stages[STAGE2].gamma = r.Stages[STAGE2].beta - M_PI/2			// go horizontal rel. to earth
 	}
 	if r.Stages[STAGE2].VRelative > 3400 {
@@ -53,12 +53,12 @@ func (r *VEHICLE) grav_turn(i int32) {
 	if r.Stages[STAGE2].VRelative > 3900 {
 		r.Stages[STAGE2].gamma = r.Stages[STAGE2].beta - M_PI/2 - 0.2
 	}
-/*	if r.Stages[STAGE2].VRelative > 4400 {
+	if r.Stages[STAGE2].VRelative > 4400 {
 		r.Stages[STAGE2].gamma = r.Stages[STAGE2].beta - M_PI/2 - 0.3
 	}
 	if r.Stages[STAGE2].VRelative > 6200 {
 		r.Stages[STAGE2].gamma = r.Stages[STAGE2].beta - M_PI/2 - 0.4
-	}*/
+	}
 }
 
 //inline void liftOff()
@@ -100,8 +100,8 @@ func (r *VEHICLE) timeStep(i int32) { // i = stage
 		r.Stages[i].Thrust = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * r.GetThrust(r.Stages[i].DTF, i)	// Thrust
 
 		/* x-direction	*/
-//		r.Stages[i].ForceX = r.Stages[i].Thrust * math.Cos(r.Stages[i].gamma) + drag * math.Cos(r.Stages[i].alpha + M_PI) + r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Cos(r.Stages[i].beta + M_PI)
-		r.Stages[i].ForceX = r.Stages[i].Thrust * math.Cos(r.Stages[i].gamma) - drag * math.Cos(r.Stages[i].alpha) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Cos(r.Stages[i].beta)
+		r.Stages[i].ForceX = r.Stages[i].Thrust * math.Cos(r.Stages[i].gamma) + drag * math.Cos(r.Stages[i].alpha + M_PI) + r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Cos(r.Stages[i].beta + M_PI)
+//		r.Stages[i].ForceX = r.Stages[i].Thrust * math.Cos(r.Stages[i].gamma) - drag * math.Cos(r.Stages[i].alpha) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Cos(r.Stages[i].beta)
 		r.Stages[i].cx = r.Stages[i].cx + r.Stages[i].vAx * r.Stages[i].dt
 		r.Stages[i].ax = r.Stages[i].ForceX / r.Stages[i].Mass
 
@@ -109,8 +109,8 @@ func (r *VEHICLE) timeStep(i int32) { // i = stage
 		r.Stages[i].vRx = r.Stages[i].vAx - vE * math.Sin(r.Stages[i].beta)
 
 		/* y-direction	*/
-//		r.Stages[i].ForceY = r.Stages[i].Thrust * math.Sin(r.Stages[i].gamma) + drag * math.Sin(r.Stages[i].alpha + M_PI) + r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Sin(r.Stages[i].beta + M_PI)
-		r.Stages[i].ForceY = r.Stages[i].Thrust * math.Sin(r.Stages[i].gamma) - drag * math.Sin(r.Stages[i].alpha) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Sin(r.Stages[i].beta)
+		r.Stages[i].ForceY = r.Stages[i].Thrust * math.Sin(r.Stages[i].gamma) + drag * math.Sin(r.Stages[i].alpha + M_PI) + r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Sin(r.Stages[i].beta + M_PI)
+//		r.Stages[i].ForceY = r.Stages[i].Thrust * math.Sin(r.Stages[i].gamma) - drag * math.Sin(r.Stages[i].alpha) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Sin(r.Stages[i].beta)
 		r.Stages[i].cy = r.Stages[i].cy + r.Stages[i].vAy * r.Stages[i].dt
 		r.Stages[i].ay = r.Stages[i].ForceY / r.Stages[i].Mass
 
