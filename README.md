@@ -28,7 +28,7 @@ offset 15:  1 reserved byte
 ```
 
 A data packet payload has a default length of 256 bytes and therefore can hold up to 256 / 16 = **16** data points.
-Since the vehicle needs to send more data points than a packet can hold, the vehicle data muxer will automatically take car of breaking down the whole set of data points though multiple packets. It is also possible to create longer packets to hold more data points by changing the value of the constant **PACKET_PAYLOAD_LENGTH** to a multiple of 256 in the file _daq/packages/data/packet.go_.
+Since the vehicle needs to send more data points than a packet can hold, the vehicle data muxer will automatically take care of breaking down the set of data points though multiple packets. It is also possible to create longer packets to hold more data points by changing the value of the constant **PACKET_PAYLOAD_LENGTH** to a multiple of 256 in the file _daq/packages/data/packet.go_.
 
 
 ### Ground station
