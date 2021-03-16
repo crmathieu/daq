@@ -1,0 +1,40 @@
+description: OG2 falcon9 mission
+earthrotation: 407.6614278 # in m/s at equator
+launchazimuth: 35 # degres between north and R trajectory
+launchlatitude: 28.3922 # cap canaveral
+burnout: 552
+orbitperigee: 220000
+
+# cos(inclination) = cos(lat) * sin(azimuth) 
+# hence inclination = arccos(cos(lat) * sin(azimuth))
+events: 
+- id: MEI
+  time: -2.0
+  stage: 0
+- id: LIFT_OFF
+  time: 0.0
+  stage: 0
+- id: PITCH
+  time: 20.0
+  stage: 0
+- id: MECO
+  time: 161.0
+  stage: 0
+- id: STAGE_SEP
+  time: 163.0
+  stage: 1
+- id: SEI
+  time: 165.0
+  stage: 1
+- id: ENTRY_BURN_ON     # main engine entry burn ignition #MEI-2
+  time: 515.0
+  stage: 0
+- id: ENTRY_BURN_OFF      # main engine entry burn cut off #MECO-2
+  time: 552.0
+  stage: 0
+- id: LANDING_BURN_ON     # main engine landing burn ignition #MEI-3
+  time: 628.0
+  stage: 0
+- id: SECO
+  time: 552.0
+  stage: 1
