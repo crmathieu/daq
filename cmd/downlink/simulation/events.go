@@ -1,14 +1,15 @@
-
 package main
+
 import (
-//	"math"
-//	"os"
+	//	"math"
+	//	"os"
 	"fmt"
+
 	"github.com/crmathieu/daq/packages/data"
 )
 
-func (v *VEHICLE) hadEvent(event uint32) bool {
-	if v.EventsMap & event != 0 {
+func (v *VEHICLE) hadEvent(eventid uint32) bool {
+	if v.EventsMap&eventid != 0 {
 		return true
 	}
 	return false
@@ -19,34 +20,35 @@ func (v *VEHICLE) hadEvent(event uint32) bool {
 //	gamma[0] = (M_PI / 2) - 0.025;
 //	*x = 1;
 //}
-func (r *VEHICLE) pitchStart() bool {
-	r.Stages[BOOSTER].gamma = (M_PI / 2) - 0.025
+func (r *VEHICLE) pitchStart(event *Pevent) bool {
+	r.Stages[BOOSTER].gamma = (M_PI / 2) - event.Gamma0 // 0.025
 	r.EventsMap = r.EventsMap | data.E_STARTPITCH
 	r.LastEvent = data.E_STARTPITCH
 	return true
 }
 
-func (r *VEHICLE) Throttle(event *Event) bool {
-	r.Stages[event.Stage].ThrottleRate = float64(event.Rate)/100
-	r.EventsMap = r.EventsMap | data.EventMapping[event.Id]
-	r.LastEvent = data.EventMapping[event.Id]
+func (r *VEHICLE) Throttle(event *Pevent) bool {
+	r.Stages[event.Stage].ThrottleRate = float64(event.Rate) / 100
+	//	r.EventsMap = r.EventsMap | data.EventMapping[event.Id]
+	r.EventsMap = r.EventsMap | data.EventInfoMapping[event.Id].Id
+	r.LastEvent = data.EventInfoMapping[event.Id].Id
 	return true
 }
 
-func (r *VEHICLE) Ignition(stage int32, event uint32, throttleRate float64, num_engs int32) bool {
+func (r *VEHICLE) Ignition(stage int32, eventid uint32, throttleRate float64, num_engs int32) bool {
 
 	r.Stages[stage].ThrottleRate = throttleRate //1.0
 	r.Stages[stage].RunningEngines = num_engs
-	r.EventsMap = r.EventsMap | event
-	r.LastEvent = event
+	r.EventsMap = r.EventsMap | eventid
+	r.LastEvent = eventid
 	return true
 }
 
-func (r *VEHICLE) MSECO(stage int32, event uint32) bool {
+func (r *VEHICLE) MSECO(stage int32, eventid uint32) bool {
 	r.Stages[stage].ThrottleRate = 0
 	r.Stages[stage].RunningEngines = 0
-	r.EventsMap = r.EventsMap | event
-	r.LastEvent = event
+	r.EventsMap = r.EventsMap | eventid
+	r.LastEvent = eventid
 	return true
 }
 
@@ -57,7 +59,7 @@ func (r *VEHICLE) sync_stages() {
 	r.Stages[STAGE2].RVel = r.Stages[BOOSTER].RVel
 	r.Stages[STAGE2].AVel = r.Stages[BOOSTER].AVel
 	r.Stages[STAGE2].VRelative = r.Stages[BOOSTER].VRelative
-	
+
 	r.Stages[STAGE2].cx = r.Stages[BOOSTER].cx
 	r.Stages[STAGE2].cy = r.Stages[BOOSTER].cy
 
@@ -79,7 +81,7 @@ func (r *VEHICLE) sync_stages() {
 
 func (r *VEHICLE) stage_sep() {
 	r.sync_stages()
-/*	for i := 0; i < 2; i++ {
+	/*	for i := 0; i < 2; i++ {
 		r.Stages[i].Mass = r.Stages[i].Mr + r.Stages[i].Mf + r.Stages[i].Mp;
 	}*/
 	r.SysGuidance._stagesep = true
@@ -89,101 +91,101 @@ func (r *VEHICLE) stage_sep() {
 }
 
 //func (r *VEHICLE) execute(event string, f *os.File) {
-func (r *VEHICLE) execute(event Event) {
+func (r *VEHICLE) execute(event Pevent) {
 	//fmt.Println(event)
 	switch event.Id {
 	case "MEI":
-		r.SysGuidance._MEI1 = r.Ignition(BOOSTER, data.EventMapping[event.Id], 1.0, 9)
+		//		r.SysGuidance._MEI1 = r.Ignition(BOOSTER, data.EventMapping[event.Id], 1.0, 9)
+		r.SysGuidance._MEI1 = r.Ignition(BOOSTER, data.EventInfoMapping[event.Id].Id, 1.0, 9)
 		//output_telemetry(event, nil, 0)
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"--> Ignition Booster .....")
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "--> Ignition Booster .....")
 		break
 
 	case "THROTTLE_DWN":
 		r.Throttle(&event)
 		r.EventsMap = r.EventsMap &^ (data.E_THROTTLE_U)
-		fmt.Println("\t",r.Stages[event.Stage].Clock,"--> Throttling down at ",event.Rate)
+		fmt.Println("\t", r.Stages[event.Stage].Clock, "--> Throttling down at ", event.Rate)
 		break
 
 	case "THROTTLE_UP":
 		r.Throttle(&event)
 		r.EventsMap = r.EventsMap &^ (data.E_THROTTLE_D)
-		fmt.Println("\t",r.Stages[event.Stage].Clock,"--> Throttling up at ",event.Rate)
+		fmt.Println("\t", r.Stages[event.Stage].Clock, "--> Throttling up at ", event.Rate)
 		break
 
-	case  "LIFT_OFF":
+	case "LIFT_OFF":
 		r.SysGuidance._release = r.liftOff()
 		//output_telemetry(event, nil, 0)
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"--> Lift off .....")
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "--> Lift off .....")
 		break
 
 	case "PITCH":
-		r.SysGuidance._pitch = r.pitchStart()
+		r.SysGuidance._pitch = r.pitchStart(&event)
 		//output_telemetry(event, nil, 0)
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"--> Pitching .....")
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "--> Pitching .....", event.Gamma0)
 		break
 
 	case "MECO":
 		r.SysGuidance._MECO1 = r.MSECO(BOOSTER, data.E_MECO_1)
 		//output_telemetry(event, f, 1)
 		r.sync_stages()
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"Main engine cut off .....")
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Main engine cut off .....")
 		break
 
 	case "STAGE_SEP":
 		r.stage_sep()
 		//output_telemetry(event, nil, 0)
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"Stage separation .....")
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Stage separation .....")
 		break
 
 	case "SEI":
 		r.SysGuidance._SEI1 = r.Ignition(STAGE2, data.E_SEI_1, 1.0, 1)
 		//output_telemetry(event, nil, 1)
-		fmt.Println("\t",r.Stages[STAGE2].Clock,"Second Stage Ignition .....")
+		fmt.Println("\t", r.Stages[STAGE2].Clock, "Second Stage Ignition .....")
 		break
 
 	case "ENTRY_BURN_ON": //"MEI-2":
 		r.SysGuidance._MEI2 = r.Ignition(BOOSTER, data.E_EBURNI, 1.0, 3) //data.E_MEI_2, 3)
 		//output_telemetry(event, f, 0)
 		r.SysGuidance._EBURN = true // to be removed $$$
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"Entry burn Starts .....")
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Entry burn Starts .....")
 		break
 
 	case "ENTRY_BURN_OFF": //"MECO-2":
 		r.SysGuidance._MECO2 = r.MSECO(BOOSTER, data.E_EBURNO) // data.E_MECO_2)
 		//output_telemetry(event, f, 0)
-		r.SysGuidance._EBURN = false // to be removed $$$ 
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"Entry burn Stopped .....")
+		r.SysGuidance._EBURN = false // to be removed $$$
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Entry burn Stopped .....")
 		break
 
 	case "BOOSTBACK_BURN_ON": //boost back burn starts
 		r.SysGuidance._MEI2 = r.Ignition(BOOSTER, data.E_BBURNI, 1.0, 3) // data.E_MEI_2, 3)
 		//output_telemetry(event, f, 0)
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"BoostBack burn Starts .....")
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "BoostBack burn Starts .....")
 		r.SysGuidance._BBURN = true
 		break
 
 	case "BOOSTBACK_BURN_OFF": // boost back burn stops
 		r.SysGuidance._MECO2 = r.MSECO(BOOSTER, data.E_BBURNO) //data.E_MECO_2)
 		//output_telemetry(event, f, 0)
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"Boostback burn Stopped .....")
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Boostback burn Stopped .....")
 		r.SysGuidance._BBURN = false
 		break
 
 	case "SECO":
 		r.SysGuidance._SECO1 = r.MSECO(STAGE2, data.E_SECO_1)
 		//output_telemetry(event, f, 1);
-		fmt.Println("\t",r.Stages[STAGE2].Clock,"Second stage engine cut off .....")
+		fmt.Println("\t", r.Stages[STAGE2].Clock, "Second stage engine cut off .....")
 		break
 
 	case "LANDING_BURN_ON": //"MEI-3":
 		r.SysGuidance._MEI3 = r.Ignition(BOOSTER, data.E_LBURNI, 1.0, 1) //data.E_MEI_3, 1)
 		//output_telemetry(event, f, 0)
 		r.SysGuidance._LBURN = true // to be removed $$$
-		fmt.Println("\t",r.Stages[BOOSTER].Clock,"Landing burn Started .....")
+		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Landing burn Started .....")
 		break
 
 	default:
-		fmt.Println(event,": unknown launch phase")
+		fmt.Println(event, ": unknown launch phase")
 	}
 }
-

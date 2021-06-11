@@ -138,7 +138,14 @@ class canvasElt {
         this.ctx.fillText(text, x, y);
     }
 
+    clear() {
+        //        this.ctx.clearRect(5, 5, this.x_circle_center - 16, this.canvas.height - 10);
+        this.ctx.clearRect(5, 5, this.width - 10, TIMEOFFSET); //15, TIMEOFFSET);
+    }
+
 }
+
+
 
 class gravityT extends canvasElt {
     constructor(id, width, height) {

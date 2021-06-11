@@ -6,8 +6,11 @@ var timerId = 0;
 var conn;
 var bigEndian = isBigEndian()
 
+const EVENTOFFSET_INC = 20;
+const TIMEOFFSET = 20;
 var eventHist = 0;
-var eventOffset = 20;
+var eventOffset = TIMEOFFSET + EVENTOFFSET_INC;
+
 var nsec = 0;
 var timeHist = -20;
 var initStage2Position = false;
@@ -149,7 +152,9 @@ function start(websocketServerAddr) {
                     var time = dataView.getFloat32(4, littleEndian);
                     nsec = Math.round(time);
                     if (nsec > timeHist) {
+                        eventsRecorder.clear();
                         //document.getElementById("time").innerHTML = new Date(nsec * 1000).toISOString().substr(11, 8) + " (" + nsec.toString() + ")";
+                        eventsRecorder.drawTextAtPoint(new Date(nsec * 1000).toISOString().substr(11, 8) + " (" + nsec.toString() + ")", 15, TIMEOFFSET);
                         timeHist = nsec;
                     }
                     break;
@@ -160,7 +165,7 @@ function start(websocketServerAddr) {
                     if (lastEvent != eventID) {
                         //document.getElementById("EventsList").innerHTML += "<br>" + eventMap.get(eventID) + " (" + nsec + ")";
                         eventsRecorder.drawTextAtPoint("(" + nsec + ") " + eventMap.get(eventID), 5, eventOffset)
-                        eventOffset += 20;
+                        eventOffset += EVENTOFFSET_INC;
                         lastEvent = eventID;
                     }
                     if ((eventHist & E_STAGESEP) && !initStage2Position) {

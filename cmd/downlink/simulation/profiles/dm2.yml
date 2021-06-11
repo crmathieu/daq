@@ -1,5 +1,11 @@
 description: Demo-2 mission
 earthrotation: 407.6614278
+#launchazimuth: 35 # degres between north and R trajectory
+launchlatitude: 28.3922 # cap canaveral
+orbitinclination: 51.6 # ISS incl
+orbitinsertion: 220000
+burnout: 552
+
 events: 
 - id: MEI
   time: -2.0

@@ -1,12 +1,15 @@
 description: OG2 falcon9 mission
 earthrotation: 407.6614278 # in m/s at equator
-launchazimuth: 35 # degres between north and R trajectory
+#launchazimuth: 35 # degres between north and R trajectory
 launchlatitude: 28.3922 # cap canaveral
+orbitinclination: 51.6 # ISS incl
+orbitinsertion: 192500
 burnout: 552
-orbitperigee: 220000
 
 # cos(inclination) = cos(lat) * sin(azimuth) 
-# hence inclination = arccos(cos(lat) * sin(azimuth))
+# from a given latitude, if we want to launch a payload to a particular orbit inclination, 
+# we need to calculate the launch azimuth angle given by the formula: 
+#       azimuth angle = arcsin[cos(inclination)/cos(latitude)]
 events: 
 - id: MEI
   time: -2.0
@@ -15,8 +18,9 @@ events:
   time: 0.0
   stage: 0
 - id: PITCH
-  time: 20.0
+  time: 10.0
   stage: 0
+  gamma0: 0.01
 - id: MECO
   time: 161.0
   stage: 0
