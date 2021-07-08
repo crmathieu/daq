@@ -22,7 +22,7 @@ const (
 	// datapoints ID
 	IDVELOCITY       = uint32(1)
 	IDPOSITION       = uint32(2)
-	IDANGLES      	 = uint32(3)
+	IDANGLES         = uint32(3)
 	IDTHRUST         = uint32(4)
 	IDEVENT          = uint32(5)
 	IDMASSPROPELLANT = uint32(6)
@@ -46,12 +46,12 @@ const (
 	E_LBURNO     = 0x00004000 // first stage landing burn stops
 	E_THROTTLE_D = 0x00008000 // throttle engine down
 	E_THROTTLE_U = 0x00010000 // throttle engine down
+	E_INFO       = 0x00040000 // Informational
 )
 
 type eventInfo struct {
-	Id uint32
+	Id    uint32
 	Label string
-
 }
 
 // Datapoint definitions (each dp is 16 bytes long)
@@ -59,8 +59,8 @@ type SENSvelocity struct {
 	Id           uint32
 	Velocity     float32
 	Acceleration float32
-//	Stage        uint32
-	reserved     [4]byte
+	//	Stage        uint32
+	reserved [4]byte
 }
 
 type SENSevent struct {
@@ -69,7 +69,7 @@ type SENSevent struct {
 	Time     float32
 	EventMap uint32
 }
-	
+
 type SENStime struct {
 	Id       uint32
 	Time     float32
@@ -85,21 +85,21 @@ type SENSposition struct {
 	Id       uint32
 	Range    float32
 	Altitude float32
-//	Stage    uint32
-	reserved     [4]byte
+	//	Stage    uint32
+	reserved [4]byte
 }
 
 type SENSangles struct {
-	Id      uint32
-	Alpha	float32 
-	Beta	float32 
-	Gamma 	float32
+	Id    uint32
+	Zeta  float32
+	Beta  float32
+	Gamma float32
 }
 
 type SENSthrust struct {
-	Id       uint32
-	Thrust   float32
-//	Stage    int32
+	Id     uint32
+	Thrust float32
+	//	Stage    int32
 	Reserved [8]byte
 }
 
@@ -116,11 +116,11 @@ type SENSenginePressure struct {
 }
 
 type SENSpropellantMass struct {
-	Id    uint32
-	Mass  float32
-//	Stage uint32
-	Mflow float32
-	reserved     [4]byte
+	Id   uint32
+	Mass float32
+	//	Stage uint32
+	Mflow    float32
+	reserved [4]byte
 }
 
 type DataPoint struct {

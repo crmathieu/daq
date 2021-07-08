@@ -1,10 +1,23 @@
 description: OG2 falcon9 mission
 earthrotation: 407.6614278 # in m/s at equator
-#launchazimuth: 35 # degres between north and R trajectory
 launchlatitude: 28.3922 # cap canaveral
-orbitinclination: 51.6 # ISS incl
-orbitinsertion: 192500
-burnout: 552
+
+# Orbit Inclination angle is between equatorial plane and orbital plane. From the desired inclination
+# and the launch latitude, we can calculate the azimuth angle the rocket has to follow to reach an orbit
+# with that inclination
+#orbitinclination: 53.2 # starlink incl
+
+# Note that the inclination CANNOT be less than the launchpad latitude
+orbitinclination: 28.3922 #97.89 # polar
+
+# Orbit Insertion is the target orbit
+#orbitinsertion: 190000
+injectionangle: 0
+payloadmass: 13620 #3050 # SAOCOM 1B
+
+#orbitinclination: 51.6 # ISS incl
+orbitinsertion: 190000
+burnout: 535 #552
 
 # cos(inclination) = cos(lat) * sin(azimuth) 
 # from a given latitude, if we want to launch a payload to a particular orbit inclination, 
@@ -14,31 +27,43 @@ events:
 - id: MEI
   time: -2.0
   stage: 0
+  rate: 0.99
 - id: LIFT_OFF
   time: 0.0
   stage: 0
 - id: PITCH
-  time: 10.0
+  time: 20.0 #15.0
   stage: 0
-  gamma0: 0.01
+  gamma0: 2  # in degree
+- id: THROTTLE_DWN
+  time: 65.0
+  stage: 0
+  rate: 0.75
+- id: THROTTLE_UP
+  time: 73.0
+  stage: 0
+  rate: 0.92
 - id: MECO
-  time: 161.0
+  time: 155.0
   stage: 0
 - id: STAGE_SEP
-  time: 163.0
+  time: 160.0
   stage: 1
 - id: SEI
   time: 165.0
   stage: 1
+  rate: 0.82
 - id: ENTRY_BURN_ON     # main engine entry burn ignition #MEI-2
   time: 515.0
   stage: 0
+  rate: 0.9
 - id: ENTRY_BURN_OFF      # main engine entry burn cut off #MECO-2
   time: 552.0
   stage: 0
 - id: LANDING_BURN_ON     # main engine landing burn ignition #MEI-3
   time: 628.0
   stage: 0
+  rate: 0.9
 - id: SECO
-  time: 552.0
+  time: 535.0
   stage: 1
