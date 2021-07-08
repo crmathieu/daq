@@ -345,13 +345,7 @@ func (r *VEHICLE) timeStep(i int32) { // i = stage
 		// second update altitude: dh/dt = v.sin(gamma) as a function of old relative speed and time increment "dt"
 		r.Stages[i].altitude = r.Stages[i].RVel*math.Sin(r.Stages[i].gamma)*r.Stages[i].dt + r.Stages[i].altitude
 
-		//dgamma = r.gravTurnMultiPhaseTangentSteering(i)
-
-		//dgamma = r.gravTurnTwoPhaseSteering(i)
-		dgamma = r.gravTurn(i)
-		dgamma = r.gravTurnTwoPhaseTangentSteeringNEW(i)
-		//dgamma = r.gravTurnTangentSteering(i)
-		//dgamma = r.gravTurnClassic(i)
+		dgamma = r.TwoPhaseTangentSteering(i)
 
 		// calculate cartesian coordinates
 		r.Stages[i].beta = r.Stages[i].drange / Re // polar angle (in rd) based on downrange value
@@ -487,38 +481,10 @@ func (r *VEHICLE) timeStepSAVE(i int32) { // i = stage
 var nearOrbit = false
 var gammabits float64
 
-func (r *VEHICLE) gravTurn(i int32) float64 {
-	if r.SysGuidance._pitch {
-		// after stage sep, we don't care about booster gravity turn
-		if r.SysGuidance._stagesep {
-			// if we have a stage separation, we don't care of the booster, but if it is the
-			// second stage, make sure to have engine ignition before continuing the steering program
-			if i == BOOSTER || !r.SysGuidance._SEI1 {
-				return 0
-			}
-		}
-		if r.Stages[i].Clock < 155 {
-			return r.gravTurnClassic(i)
-		}
-		// second phase
-		if !switchPhase {
-			fmt.Println("SWITCHING TO PHASE 2222222")
-			switchPhase = true
-			// init initial altitude and angle and with current values
-			GammaPhase2 = deg2rad(90) - r.Stages[i].gamma
-		}
-		if r.Stages[i].altitude <= profile.OrbitInsertion {
-			gamma := GammaPhase2 * (1 - (r.Stages[i].altitude)/(profile.OrbitInsertion))
-			return gamma - r.Stages[i].gamma
-		} else {
-			r.Stages[i].gamma = 0
-			return 0
-		}
-	}
-	return 0
-}
-
-// called with every tick
+// gravTurnClassic ------------------------------------------------------------
+// steering program using differential equation to calculate instant rate if
+// change of flightpath angle
+// ----------------------------------------------------------------------------
 func (r *VEHICLE) gravTurnClassic(i int32) float64 {
 	if r.SysGuidance._pitch {
 		// after stage sep, we don't care about booster gravity turn
@@ -529,43 +495,9 @@ func (r *VEHICLE) gravTurnClassic(i int32) float64 {
 				return 0
 			}
 		}
-		//r.dtIncrements = r.dtIncrements + r.Stages[i].dt
-		// after 1 sec using the same rate, we calculate a new rate/s
-		//if r.dtIncrements > 1.0 {
-		//	println(r.dtIncrements)
-		//	r.dtIncrements = 0
 		gh := g(r.Stages[i].DTF)
-		// calculate the rate dgamma/dt = -(g - v*v/(Re+h)) * cos(gamma) * 1/v
-
-		//r.Stages[i].Mass*(gh-math.Pow(r.Stages[i].AVel*math.Cos(r.Stages[i].gamma), 2)/(Re+r.Stages[i].altitude))
-		//		instantDeviation := -(gh - (math.Pow(r.Stages[i].vAx, 2))/(Re+r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma) * (1 / r.Stages[i].AVel) //* r.Stages[i].dt
 		instantDeviation := -(1 / r.Stages[i].RVel) * (gh - (math.Pow(r.Stages[i].RVel, 2))/(Re+r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma) //* r.Stages[i].dt
 		return instantDeviation * r.Stages[i].dt
-	}
-	return 0
-}
-func (r *VEHICLE) gravTurnClassicSAVE(i int32) float64 {
-	if r.SysGuidance._pitch {
-		// after stage sep, we don't care about booster gravity turn
-		if r.SysGuidance._stagesep && i == BOOSTER {
-			//println("NEAH!")
-			return 0
-		}
-		r.dtIncrements = r.dtIncrements + r.Stages[i].dt
-		// after 1 sec using the same rate, we calculate a new rate/s
-		if r.dtIncrements > 1.0 {
-			//	println(r.dtIncrements)
-			r.dtIncrements = 0
-			gh := g(r.Stages[i].DTF)
-			// calculate the rate dgamma/dt = -(g - v*v/(Re+h)) * cos(gamma) * 1/v
-
-			//r.Stages[i].Mass*(gh-math.Pow(r.Stages[i].AVel*math.Cos(r.Stages[i].gamma), 2)/(Re+r.Stages[i].altitude))
-			r.dgammaPerSec = -(gh - (math.Pow(r.Stages[i].vAx, 2))/(Re+r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma) * (1 / r.Stages[i].AVel) //* r.Stages[i].dt
-			r.dgamma = r.dgammaPerSec * r.Stages[i].dt
-			return r.dgammaPerSec
-			println("dgammaPerSec = ", rad2deg(r.dgammaPerSec), "deg/s - r.dgamma = ", r.dgamma)
-		}
-		return 0 //r.dgamma
 	}
 	return 0
 }
@@ -602,9 +534,11 @@ type AscentSet struct {
 
 var asc AscentSet
 
-//var aPhases []AscentPhase
-
-func (r *VEHICLE) gravTurnTwoPhaseTangentSteeringNEW(i int32) float64 {
+// TwoPhaseTangentSteering ----------------------------------------------------
+// steering program using time-to-MECO as first phase and distance-to-orbit as
+// second phase
+// ----------------------------------------------------------------------------
+func (r *VEHICLE) TwoPhaseTangentSteering(i int32) float64 {
 	if r.SysGuidance._pitch {
 		// after stage sep, we don't care about booster gravity turn
 		if r.SysGuidance._stagesep {
@@ -615,11 +549,15 @@ func (r *VEHICLE) gravTurnTwoPhaseTangentSteeringNEW(i int32) float64 {
 			}
 		}
 
+		// implements: tanθ(t)=tan(θ0) *(1 - altitude/orbitInsertion)
 		if asc.currentPhase == 0 {
-			if r.Stages[i].Clock <= asc.aPhases[asc.currentPhase].endingTime { //Altitude {
+			// during first phase, we use time as a dividing factor (essentially time between PITCH and MECO)
+			if r.Stages[i].Clock <= asc.aPhases[asc.currentPhase].endingTime {
 				gamma := asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)*((r.Stages[i].Clock-asc.aPhases[asc.currentPhase].startingTime)/(asc.aPhases[asc.currentPhase].endingTime-asc.aPhases[asc.currentPhase].startingTime))
 				return gamma - r.Stages[i].gamma
 			}
+			// as we passed endTime, we enter the second phase where the dividing factor is altitude (essentially
+			// between MECO altitude and target orbit altitude)
 			asc.deviationLeft = asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)
 			asc.currentPhase += 1
 			asc.aPhases[asc.currentPhase].startingAltitude = r.Stages[i].altitude
@@ -633,6 +571,9 @@ func (r *VEHICLE) gravTurnTwoPhaseTangentSteeringNEW(i int32) float64 {
 	return 0
 }
 
+// TwoPhaseTangentSteering ----------------------------------------------------
+// steering program using multiple rate of changes based on altitude
+// ----------------------------------------------------------------------------
 func (r *VEHICLE) gravTurnMultiPhaseTangentSteering(i int32) float64 {
 	if r.SysGuidance._pitch {
 		// after stage sep, we don't care about booster gravity turn
@@ -646,18 +587,10 @@ func (r *VEHICLE) gravTurnMultiPhaseTangentSteering(i int32) float64 {
 
 		for true {
 			if r.Stages[i].altitude <= asc.aPhases[asc.currentPhase].endingAltitude {
-				//if r.Stages[i].altitude <= PHASE1_ALTITUDE {
-				// decline by 10 degrees
-
-				//				gamma := asc.deviationLeft - ((asc.aPhases[asc.currentPhase].angleDeviation)*r.Stages[i].altitude-asc.aPhases[asc.currentPhase].startingAltitude)/(asc.aPhases[asc.currentPhase].endingAltitude-asc.aPhases[asc.currentPhase].startingAltitude)
 				gamma := asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)*((r.Stages[i].altitude-asc.aPhases[asc.currentPhase].startingAltitude)/(asc.aPhases[asc.currentPhase].endingAltitude-asc.aPhases[asc.currentPhase].startingAltitude))
 				if asc.currentPhase == len(asc.aPhases)-1 {
 					//gamma = gamma + profile.InjectionAngle
 				}
-
-				// gamma := GAMMA0 * (1 - (r.Stages[i].altitude-PHASE1_ALTITUDE)/(profile.OrbitInsertion-PHASE1_ALTITUDE))
-				//gamma := phase1Gamma0 - ((PHASEROLL15 * r.Stages[i].altitude) / PHASE1_ALTITUDE)
-				//GAMMA0 = gamma
 				return gamma - r.Stages[i].gamma
 			} else {
 				asc.deviationLeft = asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)
@@ -669,63 +602,14 @@ func (r *VEHICLE) gravTurnMultiPhaseTangentSteering(i int32) float64 {
 				break
 			}
 		}
-		/*		if r.Stages[i].altitude <= profile.OrbitInsertion {
-					//			gamma := math.Atan(math.Tan(GAMMA0 * (1 - (r.Stages[i].altitude)/profile.OrbitInsertion)))
-					gamma := GAMMA0 * (1 - (r.Stages[i].altitude-PHASE1_ALTITUDE)/(profile.OrbitInsertion-PHASE1_ALTITUDE))
-					//			gamma := math.Atan(GAMMA0 * math.Tan(1-(r.Stages[i].altitude)/profile.OrbitInsertion))
-					//gamma := math.Atan(math.Tan(GAMMA0) * (1 - (r.Stages[i].altitude)/profile.OrbitInsertion))
-
-					return gamma - r.Stages[i].gamma
-				} else {
-					r.Stages[i].gamma = 0
-					return 0
-				}*/
 	}
 	return 0
 }
 
-func (r *VEHICLE) gravTurnMultiPhaseTangentSteering2(i int32) float64 {
-	if r.SysGuidance._pitch {
-		// after stage sep, we don't care about booster gravity turn
-		if r.SysGuidance._stagesep {
-			// if we have a stage separation, we don't care of the booster, but if it is the
-			// second stage, make sure to have engine ignition before continuing the steering program
-			if i == BOOSTER || !r.SysGuidance._SEI1 {
-				return 0
-			}
-		}
-		if r.Stages[i].altitude <= PHASE1_ALTITUDE {
-			// decline by 10 degrees
-			gamma := phase1Gamma0 - ((PHASEROLL15 * r.Stages[i].altitude) / PHASE1_ALTITUDE)
-			GAMMA0 = gamma
-			return gamma - r.Stages[i].gamma
-		} else if !switch2phase2 {
-			switch2phase2 = true
-			println("GAMMA0 = ", rad2deg(GAMMA0))
-		} else if r.Stages[i].altitude < PHASE2_ALTITUDE {
-			gamma := phase2Gamma0 - ((PHASEROLL15*r.Stages[i].altitude - PHASE1_ALTITUDE) / (PHASE2_ALTITUDE - PHASE1_ALTITUDE))
-			GAMMA0 = gamma
-			return gamma - r.Stages[i].gamma
-		}
-		//r.dtIncrements = r.dtIncrements + r.Stages[i].dt
-		// implements: tanθ(t)=tan(θ0) *(1 - altitude/orbitInsertion)
-		// gamma := math.Atan(math.Tan(GAMMA0 * (1 - altitude/profile.OrbitInsertion)))
-		if r.Stages[i].altitude <= profile.OrbitInsertion {
-			//			gamma := math.Atan(math.Tan(GAMMA0 * (1 - (r.Stages[i].altitude)/profile.OrbitInsertion)))
-			gamma := GAMMA0 * (1 - (r.Stages[i].altitude-PHASE1_ALTITUDE)/(profile.OrbitInsertion-PHASE1_ALTITUDE))
-			//			gamma := math.Atan(GAMMA0 * math.Tan(1-(r.Stages[i].altitude)/profile.OrbitInsertion))
-			//gamma := math.Atan(math.Tan(GAMMA0) * (1 - (r.Stages[i].altitude)/profile.OrbitInsertion))
-
-			return gamma - r.Stages[i].gamma
-		} else {
-			r.Stages[i].gamma = 0
-			return 0
-		}
-	}
-	return 0
-}
-
-func (r *VEHICLE) gravTurnTangentSteering(i int32) float64 {
+// gravTurnSimpleTangentSteering ----------------------------------------------
+// steering program using constant rate of change based on altitude
+// ----------------------------------------------------------------------------
+func (r *VEHICLE) gravTurnSimpleTangentSteering(i int32) float64 {
 	if r.SysGuidance._pitch {
 		// after stage sep, we don't care about booster gravity turn
 		if r.SysGuidance._stagesep {
@@ -782,7 +666,11 @@ var curAngleIndex, nextAngleIndex = 0, 1
 var angleIncrement = tinc
 var tlast = 0
 
-func (r *VEHICLE) gravTurnTwoPhaseSteering(i int32) float64 {
+// gravTurnProgrammedTwoPhaseSteering -----------------------------------------
+// steering program using pre-define rate of change in first phase, and rate of
+// change based on altitude in second phase
+// ----------------------------------------------------------------------------
+func (r *VEHICLE) gravTurnProgrammedTwoPhaseSteering(i int32) float64 {
 	if r.SysGuidance._pitch {
 		// after stage sep, we don't care about booster gravity turn
 		if r.SysGuidance._stagesep {
@@ -806,7 +694,6 @@ func (r *VEHICLE) gravTurnTwoPhaseSteering(i int32) float64 {
 		} else {
 
 			if !switchPhase {
-				fmt.Println("SWITCHING TO PHASE 2222222")
 				switchPhase = true
 				// init initial altitude and angle and with current values
 				GammaPhase2 = r.Stages[i].gamma
@@ -819,15 +706,6 @@ func (r *VEHICLE) gravTurnTwoPhaseSteering(i int32) float64 {
 				r.Stages[i].gamma = 0
 				return 0
 			}
-		}
-		// implements: tanθ(t)=tan(θ0) *(1 - altitude/orbitInsertion)
-		// gamma := math.Atan(math.Tan(GAMMA0 * (1 - altitude/profile.OrbitInsertion)))
-		if r.Stages[i].altitude <= profile.OrbitInsertion {
-			gamma := GAMMA0 * (1 - (r.Stages[i].altitude)/(profile.OrbitInsertion))
-			return gamma - r.Stages[i].gamma
-		} else {
-			r.Stages[i].gamma = 0
-			return 0
 		}
 	}
 	return 0
