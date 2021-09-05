@@ -17,6 +17,7 @@ var apogee = float64(0)
 var perigee = float64(0)
 var orbit = false
 var crashed = false
+var TargetOrbitalVelocity = 0.0
 
 // launch ---------------------------------------------------------------------
 // launch to orbit in realtime or calculated modes
@@ -30,6 +31,8 @@ func (v *VEHICLE) launch(realTime bool) {
 	println("Earth ROT=", vE, "m/s")
 
 	fmt.Println(vE)
+
+	TargetOrbitalVelocity = math.Sqrt(G * Me / (profile.OrbitInsertion + Re))
 
 	/*************************************************************************************************/
 	/*	Launch/Pitch Kick/ Gravity Turn				*/
@@ -98,6 +101,8 @@ func (v *VEHICLE) showOrbitDetails() {
 
 }
 
+//var TargetOrbitalVelocity = math.Sqrt(G * Me / (profile.OrbitInsertion + Re))
+
 // addStep --------------------------------------------------------------------
 // Takes care of moving the rocket one step
 // ----------------------------------------------------------------------------
@@ -108,7 +113,18 @@ func (v *VEHICLE) addStep() {
 	// check 2nd stage status
 	if v.SysGuidance._SEI1 && !v.hadEvent(data.E_SECO_1) {
 		// engine still supposed to be running
-		if v.NoFuel(STAGE2) || (v.Stages[STAGE2].VAbsolute >= math.Sqrt(G*Me/(profile.OrbitInsertion+Re))) { //||
+		//		if v.NoFuel(STAGE2) || (v.Stages[STAGE2].VAbsolute >= math.Sqrt(G*Me/(profile.OrbitInsertion+Re))) { //||
+		//fmt.Println("VEL=", v.Stages[STAGE2].AVel*3.6, ", TGT=", TargetOrbitalVelocity*3.6)
+		if v.NoFuel(STAGE2) || (v.Stages[STAGE2].AVel >= TargetOrbitalVelocity) { //||
+			fmt.Println("We have premature SECO !!!",
+				"\nTime ..................", v.Stages[STAGE2].Clock, "s",
+				"\nRemaining fuel ........", v.Stages[STAGE2].Mf, "kg",
+				"\nAltitude ..............", (v.Stages[STAGE2].altitude)*1e-3, "km",
+				"\nVelocity ..............", v.Stages[STAGE2].AVel*3.6, "km/h",
+				"\nTarget Velocity .......", TargetOrbitalVelocity*3.6, "km/h",
+				"\nFlight Path ...........", rad2deg(v.Stages[STAGE2].gamma), "deg",
+				"\nAngular range .........", rad2deg(v.Stages[STAGE2].beta), "deg")
+
 			if v.Stages[STAGE2].altitude > profile.OrbitInsertion {
 				v.Stages[STAGE2].gamma = 0
 			}
@@ -116,18 +132,20 @@ func (v *VEHICLE) addStep() {
 			if v.NoFuel(STAGE2) {
 				fmt.Println("\n\n---------> 2nd STAGE EMPTY!!!! @", v.Stages[STAGE2].Clock, "\n") //(-3*M_PI/2+v.Stages[STAGE2].alpha-v.Stages[STAGE2].beta)*180/M_PI)
 			}
-			fmt.Printf("\n************\nSECO @ ---> %g seconds\n", v.Stages[STAGE2].Clock)                 //(-3*M_PI/2+v.Stages[STAGE2].alpha-v.Stages[STAGE2].beta)*180/M_PI)
+			/*fmt.Printf("\n************\nSECO @ ---> %g seconds\n", v.Stages[STAGE2].Clock)                 //(-3*M_PI/2+v.Stages[STAGE2].alpha-v.Stages[STAGE2].beta)*180/M_PI)
 			fmt.Println("Remaining fuel ...... ", v.Stages[STAGE2].Mf, "kg")                               //(-3*M_PI/2+v.Stages[STAGE2].alpha-v.Stages[STAGE2].beta)*180/M_PI)
 			fmt.Println("Velocity ............ ", v.Stages[STAGE2].RVel*3.6, "km/h")                       //(-3*M_PI/2+v.Stages[STAGE2].alpha-v.Stages[STAGE2].beta)*180/M_PI)
 			fmt.Println("Altitude ............ ", (v.Stages[STAGE2].altitude)*1e-3, "km")                  //(-3*M_PI/2+v.Stages[STAGE2].alpha-v.Stages[STAGE2].beta)*180/M_PI)
 			fmt.Println("Injection Angle ..... ", rad2deg(v.Stages[STAGE2].gamma), "degres\n************") //(-3*M_PI/2+v.Stages[STAGE2].alpha-v.Stages[STAGE2].beta)*180/M_PI)
-
+			*/
 			v.SysGuidance._SECO1 = v.MSECO(STAGE2, data.E_SECO_1)
 			apogee = v.Stages[STAGE2].DTF
 			perigee = v.Stages[STAGE2].DTF
-			fmt.Println("AP=", apogee, "PER=", perigee)
+			//fmt.Println("AP=", apogee, "PER=", perigee)
 			//v.Stages[STAGE2].dt = 0.1
 
+		} else {
+			//fmt.Println(v.Stages[STAGE2].VAbsolute * 3.6)
 		}
 	}
 
@@ -196,7 +214,7 @@ func (v *VEHICLE) CheckGuidanceEvents(events *[]Pevent) string {
 	for i := 0; i < len(*events); i++ {
 		if !v.hadEvent(data.E_STAGESEP) && (*events)[i].Stage == BOOSTER && (math.Abs(v.Stages[BOOSTER].Clock-(*events)[i].T) < v.Stages[BOOSTER].dt/2) { //v.SysGuidance._stagesep {
 			// takes care of pre stage-separation BOOSTER events
-			fmt.Println("booster event (delta = ", math.Abs(v.Stages[STAGE2].Clock-(*events)[i].T), "), inc=", v.Stages[BOOSTER].dt/2)
+			//fmt.Println("booster event (delta = ", math.Abs(v.Stages[STAGE2].Clock-(*events)[i].T), "), inc=", v.Stages[BOOSTER].dt/2)
 			//v.execute((*events)[i].Id, nil) //f1)
 			v.execute((*events)[i]) //f1)
 			return (*events)[i].Id
@@ -204,7 +222,7 @@ func (v *VEHICLE) CheckGuidanceEvents(events *[]Pevent) string {
 
 		if (*events)[i].Stage == STAGE2 && (math.Abs(v.Stages[STAGE2].Clock-(*events)[i].T) < v.Stages[STAGE2].dt/2) { // stage 2 events
 			// takes care of STAGE2 events
-			fmt.Println("second stage event (delta = ", math.Abs(v.Stages[STAGE2].Clock-(*events)[i].T), "), inc=", v.Stages[BOOSTER].dt/2)
+			//fmt.Println("second stage event (delta = ", math.Abs(v.Stages[STAGE2].Clock-(*events)[i].T), "), inc=", v.Stages[BOOSTER].dt/2)
 			v.execute((*events)[i]) //f1);
 			return (*events)[i].Id
 		}

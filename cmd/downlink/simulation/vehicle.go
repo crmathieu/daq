@@ -251,7 +251,7 @@ func (r *VEHICLE) InitGuidance(launchProfile string) *[]Pevent {
 	}
 	// file exists
 	data, err := ioutil.ReadFile(filepath)
-	fmt.Printf("\n---\n%s\n---\n", data)
+	//fmt.Printf("\n---\n%s\n---\n", data)
 	if err != nil {
 		fmt.Println("Error reading flight profile:", err.Error())
 		return nil
@@ -346,16 +346,16 @@ func InitAscentPhases(injectionAngle float64) bool {
 				profile.MecoTime,  //155.0, // MECO
 				-1,
 				-1, //10000.0,
-				65, // between
+				50, //65, // between
 			},
 			{
 				// second phase, we use altitude
 				-1,
 				-1,
-				-1,
-				profile.OrbitInsertion,
+				-1, // starting altitude set dynamically at the end of first phase
+				profile.OrbitInsertion, // ending altitude
 				//				50000.0,
-				25, // then continue to orbit // 25,
+				40, //25, // then continue to orbit // 25,
 			},
 			//			{
 			//				50000.001,

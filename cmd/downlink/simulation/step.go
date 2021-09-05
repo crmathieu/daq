@@ -281,6 +281,38 @@ type MAXQinfo struct {
 }
 
 var mQ = MAXQinfo{}
+var mecoAltitude float64
+
+func (r *VEHICLE) OpenLoop() {
+
+	// openLoop takes velocity and altitude and estimates how much acceleration
+	// the vehicle needs to meet its orbit requirements (Vor, Aor). The function
+	// interpolates the trajectory as a linear function
+	//r.Stages[STAGE2].ThrottleRate = 1 - ((r.Stages[STAGE2].altitude - mecoAltitude) / profile.OrbitInsertion)
+	//r.Stages[STAGE2].ThrottleRate = math.Exp(-math.Pow(r.Stages[STAGE2].altitude/(profile.OrbitInsertion), 2))
+
+	// reverse sigmoid s = np.exp(var*x) / (1 + np.exp(var*x))
+	//diff := -profile.OrbitInsertion + r.Stages[STAGE2].altitude
+	//r.Stages[STAGE2].ThrottleRate = math.Exp(diff) / (1 + math.Exp(diff))
+
+	// calculate deltaV to reach orbit:
+	//deltaAltitude := Profile.OrbitInsertion - r.Stages[i].altitude
+	deltaV := TargetOrbitalVelocity - r.Stages[STAGE2].AVel
+	if deltaV < TargetOrbitalVelocity*0.01 { //*0.0045 { //220 {
+		//fmt.Println(deltaV)
+		//r.Stages[STAGE2].ThrottleRate = (profile.OrbitInsertion - r.Stages[STAGE2].altitude) / profile.OrbitInsertion
+
+		r.Stages[STAGE2].ThrottleRate = deltaV / TargetOrbitalVelocity
+
+		//r.Stages[STAGE2].ThrottleRate = 1 - (math.Log((r.Stages[STAGE2].altitude * r.Stages[STAGE2].AVel) / (profile.OrbitInsertion * TargetOrbitalVelocity)))
+		//r.Stages[STAGE2].ThrottleRate = 1 - ((r.Stages[STAGE2].altitude - mecoAltitude) / profile.OrbitInsertion)
+
+	}
+	/*
+		vy/vx -> 0
+		H-h/H -> 0
+	*/
+}
 
 func (r *VEHICLE) timeStep(i int32) { // i = stage
 
@@ -293,7 +325,7 @@ func (r *VEHICLE) timeStep(i int32) { // i = stage
 		aerodynPressure = 0.5 * rho(r.Stages[i].DTF-Re) * r.Stages[i].VRelative * r.Stages[i].VRelative // * 1e-3 // Aerodynamic stress
 
 		//fmt.Println("Current Q=", aerodynPressure, " vs MaxQ=", r.MaxQ)
-		if i == BOOSTER && aerodynPressure > mQ.MaxQ && !r.SysGuidance._MECO1 {
+		if i == BOOSTER && !r.SysGuidance._MECO1 && aerodynPressure > mQ.MaxQ {
 			//fmt.Println("########################")
 			mQ.MaxQ = aerodynPressure
 			mQ.Alt = r.Stages[i].altitude
@@ -349,7 +381,8 @@ func (r *VEHICLE) timeStep(i int32) { // i = stage
 
 		// calculate cartesian coordinates
 		r.Stages[i].beta = r.Stages[i].drange / Re // polar angle (in rd) based on downrange value
-		if r.Stages[i].beta > 2*math.Pi {
+		// when beta greater than 2xPI, we have orbit
+		if r.Stages[i].beta >= 2*math.Pi {
 			orbit = true
 		}
 		r.Stages[i].px = (Re + r.Stages[i].altitude) * math.Sin(r.Stages[i].beta) * math.Sin(deg2rad(profile.LaunchAzimuth))
@@ -384,6 +417,7 @@ func (r *VEHICLE) timeStep(i int32) { // i = stage
 			r.SysGuidance._MEI1 = false
 			return
 		}
+		r.OpenLoop()
 		//fmt.Println(int(r.Stages[i].Clock), "STAGE", i, "fuel left:", r.Stages[i].Mf)
 		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * EnginesMap[r.Stages[i].EngineID].Flow_rate * r.Stages[i].dt
 		r.Stages[i].Mf = r.Stages[i].Mf - dm
@@ -544,7 +578,7 @@ func (r *VEHICLE) TwoPhaseTangentSteering(i int32) float64 {
 		if r.SysGuidance._stagesep {
 			// if we have a stage separation, we don't care of the booster, but if it is the
 			// second stage, make sure to have engine ignition before continuing the steering program
-			if i == BOOSTER { //|| !r.SysGuidance._SEI1 {
+			if i == BOOSTER || !r.SysGuidance._SEI1 {
 				return 0
 			}
 		}
@@ -797,6 +831,9 @@ func (r *VEHICLE) landingTimeStep() { // i = stage
 		r.Stages[BOOSTER].AVel = r.Stages[BOOSTER].RVel + vE
 		r.Stages[BOOSTER].vRx = r.Stages[BOOSTER].vRx + r.Stages[BOOSTER].ax*r.Stages[BOOSTER].dt
 		r.Stages[BOOSTER].vAx = r.Stages[BOOSTER].vRx + vE
+
+		r.Stages[BOOSTER].VAbsolute = r.Stages[BOOSTER].AVel
+		r.Stages[BOOSTER].VRelative = r.Stages[BOOSTER].RVel
 
 	}
 	/*

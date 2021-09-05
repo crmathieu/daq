@@ -4,6 +4,7 @@ import (
 	//	"math"
 	//	"os"
 	"fmt"
+	"math"
 
 	"github.com/crmathieu/daq/packages/data"
 )
@@ -30,7 +31,7 @@ func (v *VEHICLE) hadEvent(eventid uint32) bool {
 //	*x = 1;
 //}
 func (r *VEHICLE) pitchStart(event *Pevent) bool {
-	r.Stages[BOOSTER].gamma = (M_PI / 2) - deg2rad(event.Gamma0) // 0.025
+	r.Stages[BOOSTER].gamma = (M_PI / 2) //- deg2rad(event.Gamma0) // 0.025
 	asc.aPhases[0].startingTime = r.Stages[BOOSTER].Clock
 	r.EventsMap = r.EventsMap | data.E_STARTPITCH
 	r.LastEvent = data.E_STARTPITCH
@@ -94,7 +95,7 @@ func (r *VEHICLE) sync_stages() {
 }
 
 func (r *VEHICLE) stage_sep() {
-	fmt.Println("\n************\nBooster fuel left:", r.Stages[BOOSTER].Mf, "\n************")
+	//fmt.Println("\n************\nBooster fuel left:", r.Stages[BOOSTER].Mf, "\n************")
 	r.sync_stages()
 	/*	for i := 0; i < 2; i++ {
 		r.Stages[i].Mass = r.Stages[i].Mr + r.Stages[i].Mf + r.Stages[i].Mp;
@@ -103,12 +104,12 @@ func (r *VEHICLE) stage_sep() {
 	if r.NoFuel(BOOSTER) {
 		fmt.Println("\n\n---------> BOOSTER EMPTY!!!! @", r.Stages[BOOSTER].Clock, "\n")
 	}
-	fmt.Printf("\n************\nMECO @ ---> %g seconds\n", r.Stages[BOOSTER].Clock)
+	/*fmt.Printf("\n************\nMECO @ ---> %g seconds\n", r.Stages[BOOSTER].Clock)
 	fmt.Println("Remaining fuel ...... ", r.Stages[BOOSTER].Mf, "kg")
 	fmt.Println("Velocity ............ ", r.Stages[BOOSTER].RVel*3.6, "km/h")
 	fmt.Println("Altitude ............ ", (r.Stages[BOOSTER].altitude)*1e-3, "km") //(-3*M_PI/2+v.Stages[STAGE2].alpha-v.Stages[STAGE2].beta)*180/M_PI)
 	fmt.Println("Injection Angle ..... ", rad2deg(r.Stages[BOOSTER].gamma), "degres\n************")
-
+	*/
 	r.SysGuidance._stagesep = true
 	r.EventsMap = r.EventsMap | data.E_STAGESEP
 	r.LastEvent = data.E_STAGESEP
@@ -133,51 +134,61 @@ func (r *VEHICLE) execute(event Pevent) {
 		//		r.SysGuidance._MEI1 = r.Ignition(BOOSTER, data.EventInfoMapping[event.Id].Id, 1.0, 9)
 		r.SysGuidance._MEI1 = r.Ignition(&event, 9)
 		//output_telemetry(event, nil, 0)
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "--> Ignition Booster .....")
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "--> Ignition Booster .....")
 		break
 
 	case "THROTTLE_DWN":
 		r.Throttle(&event)
 		r.EventsMap = r.EventsMap &^ (data.E_THROTTLE_U)
-		fmt.Println("\t", r.Stages[event.Stage].Clock, "--> Throttling down at ", event.Rate)
+		//fmt.Println("\t", r.Stages[event.Stage].Clock, "--> Throttling down at ", event.Rate)
 		break
 
 	case "THROTTLE_UP":
 		r.Throttle(&event)
 		r.EventsMap = r.EventsMap &^ (data.E_THROTTLE_D)
-		fmt.Println("\t", r.Stages[event.Stage].Clock, "--> Throttling up at ", event.Rate)
+		//fmt.Println("\t", r.Stages[event.Stage].Clock, "--> Throttling up at ", event.Rate)
 		break
 
 	case "LIFT_OFF":
 		r.SysGuidance._release = r.liftOff()
 		//output_telemetry(event, nil, 0)
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "--> Lift off .....")
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "--> Lift off .....")
 		break
 
 	case "PITCH":
 		r.SysGuidance._pitch = r.pitchStart(&event)
 		//output_telemetry(event, nil, 0)
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "--> Pitching .....", event.Gamma0)
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "--> Pitching .....", event.Gamma0)
 		break
 
 	case "MECO":
 		r.SysGuidance._MECO1 = r.MSECO(BOOSTER, data.E_MECO_1)
+		mecoAltitude = r.Stages[BOOSTER].altitude
+
+		fmt.Println("Booster main engines Cut-off:",
+			"\nTime ...................", r.Stages[BOOSTER].Clock, "s",
+			"\nRemaining fuel .........", r.Stages[BOOSTER].Mf, "kg",
+			"\nAltitude ...............", r.Stages[BOOSTER].altitude, "m",
+			"\nVelocity ...............", r.Stages[BOOSTER].AVel*3.6, "km/h",
+			"\nFlightPath .............", rad2deg(r.Stages[BOOSTER].gamma), "deg",
+			"\nAngular range ..........", rad2deg(r.Stages[BOOSTER].beta), "deg")
+
 		//output_telemetry(event, f, 1)
 		//r.sync_stages()
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Main engine cut off .....")
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "Main engine cut off .....")
 		break
 
 	case "STAGE_SEP":
 		r.stage_sep()
 		//output_telemetry(event, nil, 0)
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Stage separation .....")
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "Stage separation .....")
 		break
 
 	case "SEI":
 		//		r.SysGuidance._SEI1 = r.Ignition(STAGE2, data.E_SEI_1, 1.0, 1)
 		r.SysGuidance._SEI1 = r.Ignition(&event, 1)
 		//output_telemetry(event, nil, 1)
-		fmt.Println("\t", r.Stages[STAGE2].Clock, "Second Stage Ignition .....")
+		//fmt.Println("\t", r.Stages[STAGE2].Clock, "Second Stage Ignition .....")
 		break
 
 	case "ENTRY_BURN_ON": //"MEI-2":
@@ -185,35 +196,50 @@ func (r *VEHICLE) execute(event Pevent) {
 		r.SysGuidance._MEI2 = r.Ignition(&event, 3) //data.E_MEI_2, 3)
 		//output_telemetry(event, f, 0)
 		r.SysGuidance._EBURN = true // to be removed $$$
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Entry burn Starts .....")
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "Entry burn Starts .....")
 		break
 
 	case "ENTRY_BURN_OFF": //"MECO-2":
 		r.SysGuidance._MECO2 = r.MSECO(BOOSTER, data.E_EBURNO) // data.E_MECO_2)
 		//output_telemetry(event, f, 0)
 		r.SysGuidance._EBURN = false // to be removed $$$
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Entry burn Stopped .....")
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "Entry burn Stopped .....")
 		break
 
 	case "BOOSTBACK_BURN_ON": //boost back burn starts
 		//		r.SysGuidance._MEI2 = r.Ignition(BOOSTER, data.E_BBURNI, 1.0, 3) // data.E_MEI_2, 3)
 		r.SysGuidance._MEI2 = r.Ignition(&event, 3) // data.E_MEI_2, 3)
 		//output_telemetry(event, f, 0)
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "BoostBack burn Starts .....")
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "BoostBack burn Starts .....")
 		r.SysGuidance._BBURN = true
 		break
 
 	case "BOOSTBACK_BURN_OFF": // boost back burn stops
 		r.SysGuidance._MECO2 = r.MSECO(BOOSTER, data.E_BBURNO) //data.E_MECO_2)
 		//output_telemetry(event, f, 0)
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Boostback burn Stopped .....")
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "Boostback burn Stopped .....")
 		r.SysGuidance._BBURN = false
 		break
 
 	case "SECO":
-		r.SysGuidance._SECO1 = r.MSECO(STAGE2, data.E_SECO_1)
-		//output_telemetry(event, f, 1);
-		fmt.Println("\t", r.Stages[STAGE2].Clock, "Second stage engine cut off .....")
+		if !r.hadEvent(data.E_SECO_1) {
+			r.SysGuidance._SECO1 = r.MSECO(STAGE2, data.E_SECO_1)
+			fmt.Println("\nSecond Stage engine Cut-off:",
+				"\nTime ...................", r.Stages[STAGE2].Clock, "s",
+				"\nRemaining fuel .........", r.Stages[STAGE2].Mf, "kg",
+				"\nAltitude ...............", r.Stages[STAGE2].altitude, "m",
+				"\nVelocity ...............", r.Stages[STAGE2].AVel*3.6, "km/h",
+				"\nTarget Velocity ........", math.Sqrt(G*Me/(profile.OrbitInsertion+Re))*3.6, "km/h",
+				"\nFlightPath .............", rad2deg(r.Stages[STAGE2].gamma), "deg",
+				"\nAngular range ..........", rad2deg(r.Stages[STAGE2].beta), "deg")
+
+			// NEW NEW
+			apogee = r.Stages[STAGE2].DTF
+			perigee = r.Stages[STAGE2].DTF
+
+			//output_telemetry(event, f, 1);
+			//fmt.Println("\t", r.Stages[STAGE2].Clock, "Second stage engine cut off .....")
+		}
 		break
 
 	case "LANDING_BURN_ON": //"MEI-3":
@@ -221,7 +247,7 @@ func (r *VEHICLE) execute(event Pevent) {
 		r.SysGuidance._MEI3 = r.Ignition(&event, 1) //data.E_MEI_3, 1)
 		//output_telemetry(event, f, 0)
 		r.SysGuidance._LBURN = true // to be removed $$$
-		fmt.Println("\t", r.Stages[BOOSTER].Clock, "Landing burn Started .....")
+		//fmt.Println("\t", r.Stages[BOOSTER].Clock, "Landing burn Started .....")
 		break
 
 	default:

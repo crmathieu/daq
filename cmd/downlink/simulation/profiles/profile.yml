@@ -16,7 +16,7 @@ injectionangle: 0
 payloadmass: 13620 #3050 # SAOCOM 1B
 
 #orbitinclination: 51.6 # ISS incl
-orbitinsertion: 190000
+orbitinsertion: 500000
 burnout: 535 #552
 
 # cos(inclination) = cos(lat) * sin(azimuth) 
@@ -32,7 +32,7 @@ events:
   time: 0.0
   stage: 0
 - id: PITCH
-  time: 20.0 #15.0
+  time: 35.0 #15.0
   stage: 0
   gamma0: 2  # in degree
 - id: THROTTLE_DWN
@@ -42,7 +42,7 @@ events:
 - id: THROTTLE_UP
   time: 73.0
   stage: 0
-  rate: 0.92
+  rate: 0.98
 - id: MECO
   time: 155.0
   stage: 0
@@ -52,18 +52,18 @@ events:
 - id: SEI
   time: 165.0
   stage: 1
-  rate: 0.82
-- id: ENTRY_BURN_ON     # main engine entry burn ignition #MEI-2
-  time: 515.0
-  stage: 0
-  rate: 0.9
-- id: ENTRY_BURN_OFF      # main engine entry burn cut off #MECO-2
-  time: 552.0
-  stage: 0
-- id: LANDING_BURN_ON     # main engine landing burn ignition #MEI-3
-  time: 628.0
-  stage: 0
-  rate: 0.9
+  rate: 1.0
+#- id: ENTRY_BURN_ON     # main engine entry burn ignition #MEI-2
+#  time: 515.0
+#  stage: 0
+#  rate: 0.9
+#- id: ENTRY_BURN_OFF      # main engine entry burn cut off #MECO-2
+#  time: 552.0
+#  stage: 0
+#- id: LANDING_BURN_ON     # main engine landing burn ignition #MEI-3
+#  time: 628.0
+#  stage: 0
+#  rate: 0.9
 - id: SECO
-  time: 535.0
+  time: 655 #535.0
   stage: 1
