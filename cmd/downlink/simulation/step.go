@@ -30,7 +30,7 @@ func (r *VEHICLE) liftOff() bool {
 	fmt.Printf("\n************\nLLIFT OFF @ ---> %g seconds\n", r.Stages[BOOSTER].Clock)
 	fmt.Println("BOOSTER fuel amount ...... ", r.Stages[BOOSTER].Mf, "kg")
 
-	r.Stages[BOOSTER].Thrust = float64(r.Stages[BOOSTER].RunningEngines) * r.Stages[BOOSTER].ThrottleRate * r.GetThrust(r.Stages[BOOSTER].DTF, BOOSTER) // Thrust
+	r.Stages[BOOSTER].Thrust = float64(r.Stages[BOOSTER].RunningEngines) * r.Stages[BOOSTER].ThrottleRate * r.GetThrust(BOOSTER) // Thrust
 	fmt.Println("BOOSTER Thrust ........... ", r.Stages[BOOSTER].Thrust, "Nm")
 
 	r.Stages[BOOSTER].vAx = vE // Absolute velocity in x-direction = velocity of earth at surface
@@ -49,8 +49,8 @@ func (r *VEHICLE) liftOff() bool {
 func (r *VEHICLE) liftOff2() bool {
 	Engine := EnginesMap[r.Stages[BOOSTER].EngineID]
 
-	r.Stages[BOOSTER].ForceY = (float64(r.Stages[BOOSTER].RunningEngines) * Engine.Th_sl) - r.Stages[BOOSTER].Mass*g0
-	r.Stages[BOOSTER].ay = r.Stages[BOOSTER].ForceY / r.Stages[BOOSTER].Mass
+	r.Stages[BOOSTER].ForceY = (float64(r.Stages[BOOSTER].RunningEngines) * Engine.Th_sl) - r.Stages[BOOSTER].mass*g0
+	r.Stages[BOOSTER].ay = r.Stages[BOOSTER].ForceY / r.Stages[BOOSTER].mass
 
 	r.Stages[BOOSTER].vAx = vE // Absolute velocity in x-direction = velocity of earth at surface
 	r.Stages[BOOSTER].vAy = r.Stages[BOOSTER].vAy + (r.Stages[BOOSTER].ay * r.Stages[BOOSTER].dt / 2)
@@ -74,191 +74,6 @@ func (r *VEHICLE) liftOff2() bool {
 // body spins then this is usually the equatorial plane
 var accu = 0
 var zob = 0.0
-
-func (r *VEHICLE) timeStepWEIRD(i int32) { // i = stage
-
-	dgamma := float64(0.0)
-	if r.SysGuidance._stagesep && i == 0 {
-		fmt.Println("#############################################")
-	}
-
-	if r.SysGuidance._release {
-		accu += 1
-		//if accu > 20000 {
-		//	os.Exit(0)
-		//}
-		//fmt.Println("DTF=", r.Stages[i].DTF, "for stage", i)
-		density := rho(r.Stages[i].DTF - Re)
-		//fmt.Println("density=", density)
-		aerodynPressure = 0.5 * density * r.Stages[i].VRelative * r.Stages[i].VRelative * 1e-3 // Aerodynamic stress
-		fmt.Println("Current Q=", aerodynPressure, " vs MaxQ=", r.MaxQ)
-		if i == BOOSTER && aerodynPressure > r.MaxQ && !r.SysGuidance._MECO1 {
-			fmt.Println("########################")
-			r.MaxQ = aerodynPressure
-			r.AltMaxQ = r.Stages[i].altitude
-			zob = r.Stages[i].VRelative
-		}
-		drag = (0.5) * r.Stages[i].Cd * r.Stages[i].CSArea * density * r.Stages[i].VRelative * r.Stages[i].VRelative          // Drag
-		r.Stages[i].Thrust = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * r.GetThrust(r.Stages[i].DTF, i) // Thrust
-		// calculate force and velocity vectors norm
-		gh := g(r.Stages[i].DTF)
-		//if r.Stages[i].vAy < 0 {
-		//	drag *= -1
-		//}
-		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].Mass*gh*math.Sin(r.Stages[i].gamma)
-		//fmt.Println("Thrust", r.Stages[i].Thrust, "drag=", drag, "FORCE=", r.Stages[i].Force)
-
-		//if r.Stages[i].Force < 0 {
-		//	fmt.Println(r.Stages[i].Force)
-		//}
-		//		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].Mass*(gh-math.Pow(r.Stages[i].AVel*math.Cos(r.Stages[i].gamma), 2)/(Re+r.Stages[i].altitude))*math.Sin(r.Stages[i].gamma)
-
-		//		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].Mass*(gh-math.Pow(r.Stages[i].vAx, 2)/(Re+r.Stages[i].altitude))*math.Sin(r.Stages[i].gamma)
-		r.Stages[i].ax = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) * math.Sin(deg2rad(profile.LaunchAzimuth)) / r.Stages[i].Mass
-		r.Stages[i].az = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) * math.Cos(deg2rad(profile.LaunchAzimuth)) / r.Stages[i].Mass
-		r.Stages[i].ay = r.Stages[i].Force * math.Sin(r.Stages[i].gamma) / r.Stages[i].Mass
-		//fmt.Println("AX=", r.Stages[i].ax, ", AY=", r.Stages[i].ay, ", AZ=", r.Stages[i].az)
-
-		// update downrange first dx/dt = (Re/(Re+h))*v*cos(gamma)
-		// since we are using altitude in the range calculation formula, calculate range first so that both
-		// altitude and range are calculated simultaneously
-		// first update range as a fonction of old relative speed, old altitude and "dt" time increment
-
-		//r.Stages[i].drange = (Re/(Re+r.Stages[i].altitude))*r.Stages[i].RVel*math.Cos(r.Stages[i].gamma)*r.Stages[i].dt + r.Stages[i].drange
-
-		// second update altitude: dh/dt = v.sin(gamma) as a function of old relative speed and time increment "dt"
-		//r.Stages[i].altitude = r.Stages[i].RVel*math.Sin(r.Stages[i].gamma)*r.Stages[i].dt + r.Stages[i].altitude
-
-		r.Stages[i].px = r.Stages[i].px + r.Stages[i].vx*r.Stages[i].dt
-		r.Stages[i].py = r.Stages[i].py + r.Stages[i].vy*r.Stages[i].dt
-		r.Stages[i].pz = r.Stages[i].pz + r.Stages[i].vz*r.Stages[i].dt
-		//fmt.Println("CX=", r.Stages[i].px, ", CY=", r.Stages[i].py, ", CZ=", r.Stages[i].pz)
-		// calculate range from X value and azimuth angle
-
-		r.Stages[i].drange = r.Stages[i].px / math.Sin(profile.LaunchAzimuth)
-		r.Stages[i].altitude = r.Stages[i].py
-		//fmt.Println("DT", r.Stages[i].dt, "CX=", r.Stages[i].px, ", CY=", r.Stages[i].py, ", CZ=", r.Stages[i].pz, "VX=", r.Stages[i].vx, ", VY=", r.Stages[i].vy, ", VZ=", r.Stages[i].vz)
-
-		r.Stages[i].vx = r.Stages[i].vx + r.Stages[i].ax*r.Stages[i].dt
-		r.Stages[i].vy = r.Stages[i].vy + r.Stages[i].ay*r.Stages[i].dt
-		r.Stages[i].vz = r.Stages[i].vz + r.Stages[i].az*r.Stages[i].dt
-		//fmt.Println("VX=", r.Stages[i].vx, ", VY=", r.Stages[i].vy, ", VZ=", r.Stages[i].vz)
-
-		// calculate dgamma/dt = -(g - v*v/(Re+h)) * cos(gamma) * 1/v
-		//dgamma = -(gh - (r.Stages[i].Vel * r.Stages[i].Vel)/(Re + r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma) * (1/r.Stages[i].Vel)
-		// dgamma = gamma /()
-		//		dgamma = (profile.OrbitPerigee - r.Stages[i].altitude)*1e-3 / (profile.BurnoutTime - r.Stages[i].Clock)
-
-		//r.TotalTimeIncrement = qTotalTimeIncrement + dt
-
-		//		dgamma = r.gravTurnTangentSteering(i)
-
-		dgamma = r.gravTurnMultiPhaseTangentSteering(i)
-		fmt.Println(i, r.Stages[i].gamma)
-		//dgamma = r.gravTurnClassic(i)
-
-		//if dgamma != 0 {
-		//	println(dgamma)
-		//}
-
-		//		dgamma = r.gravTurn(i)
-
-		// calculate cartesian coordinates
-		//r.Stages[i].beta = r.Stages[i].drange / Re // polar angle (in rd) based on downrange value
-		//r.Stages[i].px = (Re + r.Stages[i].altitude) * math.Sin(r.Stages[i].beta)
-		//r.Stages[i].py = (Re + r.Stages[i].altitude) * math.Cos(r.Stages[i].beta)
-
-		// update velocities
-		r.Stages[i].RVel = r.Stages[i].RVel + (r.Stages[i].Force/r.Stages[i].Mass)*r.Stages[i].dt
-		r.Stages[i].RVel = math.Sqrt(math.Pow(r.Stages[i].vx, 2) + math.Pow(r.Stages[i].vy, 2) + math.Pow(r.Stages[i].vz, 2))
-
-		//fmt.Println("RVEL=", r.Stages[i].RVel, "From coordinate=", math.Sqrt(math.Pow(r.Stages[i].vx, 2)+math.Pow(r.Stages[i].vy, 2)+math.Pow(r.Stages[i].vz, 2)))
-		r.Stages[i].AVel = r.Stages[i].RVel + vE
-
-		if false {
-			// x-direction
-			//		r.Stages[i].ForceX = r.Stages[i].Thrust * math.Cos(r.Stages[i].gamma) - drag * math.Cos(r.Stages[i].beta) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Cos(r.Stages[i].beta)
-			//		r.Stages[i].ForceX = r.Stages[i].Force * math.Cos(r.Stages[i].gamma)
-			//		r.Stages[i].px = r.Stages[i].px + r.Stages[i].vAx * r.Stages[i].dt
-			r.Stages[i].ax = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) / r.Stages[i].Mass
-
-			r.Stages[i].vRx = r.Stages[i].vRx + r.Stages[i].ax*r.Stages[i].dt
-			r.Stages[i].vAx = r.Stages[i].vRx + vE //* math.Sin(r.Stages[i].beta)
-
-			// y-direction
-			//		r.Stages[i].ForceY = r.Stages[i].Thrust * math.Sin(r.Stages[i].gamma) - drag * math.Sin(r.Stages[i].beta) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Sin(r.Stages[i].beta)
-			//		r.Stages[i].py = r.Stages[i].py + r.Stages[i].vAy * r.Stages[i].dt
-			r.Stages[i].ay = r.Stages[i].Force * math.Sin(r.Stages[i].gamma) / r.Stages[i].Mass
-
-			r.Stages[i].vAy = r.Stages[i].vAy + r.Stages[i].ay*r.Stages[i].dt
-			r.Stages[i].vRy = r.Stages[i].vAy //- vE * math.Cos(M_PI + r.Stages[i].beta)
-
-			r.Stages[i].DTF = math.Sqrt(r.Stages[i].px*r.Stages[i].px + r.Stages[i].py*r.Stages[i].py)
-			r.Stages[i].VAbsolute = math.Sqrt(r.Stages[i].vAx*r.Stages[i].vAx + r.Stages[i].vAy*r.Stages[i].vAy)
-			r.Stages[i].VRelative = math.Sqrt(r.Stages[i].vRx*r.Stages[i].vRx + r.Stages[i].vRy*r.Stages[i].vRy)
-			r.Stages[i].Acc = r.Stages[i].Force / r.Stages[i].Mass //math.Sqrt(r.Stages[i].ax * r.Stages[i].ax + r.Stages[i].ay * r.Stages[i].ay)
-
-		} else {
-			// NEW NEW
-			r.Stages[i].VAbsolute = r.Stages[i].AVel
-			r.Stages[i].VRelative = r.Stages[i].RVel
-			r.Stages[i].DTF = Re + r.Stages[i].altitude
-			r.Stages[i].Acc = r.Stages[i].Force / r.Stages[i].Mass //math.Sqrt(r.Stages[i].ax * r.Stages[i].ax + r.Stages[i].ay * r.Stages[i].ay)
-		}
-
-		// update velocities
-		//r.Stages[i].RVel = r.Stages[i].RVel + (r.Stages[i].Force/r.Stages[i].Mass)*r.Stages[i].dt
-		//fmt.Println("RVEL=", r.Stages[i].RVel, "From coordinate=", math.Sqrt(math.Pow(r.Stages[i].vx, 2)+math.Pow(r.Stages[i].vy, 2)+math.Pow(r.Stages[i].vz, 2)))
-		//r.Stages[i].AVel = r.Stages[i].RVel + vE
-		//		r.Stages[i].vRx = r.Stages[i].vRx + r.Stages[i].ax*r.Stages[i].dt
-		//		r.Stages[i].vAx = r.Stages[i].vRx + vE
-
-		//		r.Stages[i].vAy = r.Stages[i].vAy + r.Stages[i].ay*r.Stages[i].dt
-		//		r.Stages[i].vRy = r.Stages[i].vAy //- vE * math.Cos(M_PI + r.Stages[i].beta)
-
-	}
-	/*
-		if r.SysGuidance._BBURN  || r.SysGuidance._LBURN {
-			r.flip(0)
-		}
-		if r.SysGuidance._LBURN && mod(r.Stages[i].Clock, 5) < r.Stages[i].dt {
-			r.update_landing_throttle()
-		}
-	*/
-
-	/*
-		r.Stages[i].px = r.Stages[i].px + r.Stages[i].vAx * r.Stages[i].dt
-		r.Stages[i].py = r.Stages[i].py + r.Stages[i].vAy * r.Stages[i].dt
-	*/
-
-	if r.Stages[i].gamma >= math.Abs(dgamma) {
-		r.Stages[i].gamma = r.Stages[i].gamma + dgamma //- math.Abs(dgamma)
-	} else {
-		r.Stages[i].gamma = 0
-	}
-	//fmt.Println("GAMMA=", r.Stages[i].gamma)
-	if r.SysGuidance._MEI1 {
-		if r.Stages[i].Mf < 0.05 {
-			//fmt.Printf("STAGE %v ", r.Stages[i]) //, "is EMPTY!!!!")
-			r.Stages[i].RunningEngines = 0
-			fmt.Printf("\n************\nPrematured MECO @ ---> %g seconds\n", r.Stages[i].Clock) //(-3*M_PI/2+v.Stages[STAGE2].beta-v.Stages[STAGE2].beta)*180/M_PI)
-			fmt.Println("Remaining fuel ...... ", r.Stages[i].Mf, "kg")                          //(-3*M_PI/2+v.Stages[STAGE2].beta-v.Stages[STAGE2].beta)*180/M_PI)
-			fmt.Println("Velocity ............ ", r.Stages[i].RVel*3.6, "km/h")                  //(-3*M_PI/2+v.Stages[STAGE2].beta-v.Stages[STAGE2].beta)*180/M_PI)
-			r.SysGuidance._MECO1 = r.MSECO(BOOSTER, data.E_MECO_1)
-			r.SysGuidance._MEI1 = false
-			return
-		}
-		//fmt.Println(int(r.Stages[i].Clock), "STAGE", i, "fuel left:", r.Stages[i].Mf)
-		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * EnginesMap[r.Stages[i].EngineID].Flow_rate * r.Stages[i].dt
-		r.Stages[i].Mf = r.Stages[i].Mf - dm
-		r.Stages[i].Mass = r.Stages[i].Mass - dm
-		//if r.SysGuidance._release {
-		//	fmt.Println("dm=", dm, "fuel=", r.Stages[i].Mf, "Total-mass=", r.Stages[i].Mass)
-		//}
-	}
-
-	//	fmt.Println("gamma = ", rad2deg(r.Stages[i].gamma))
-}
 
 //var angle = 0.0
 //var ztime = 0.0
@@ -285,6 +100,9 @@ var mecoAltitude float64
 
 func (r *VEHICLE) OpenLoop() {
 
+	// one could compare the ratio velocity/targetVelocity and altitude/targetOrbit
+	//
+
 	// openLoop takes velocity and altitude and estimates how much acceleration
 	// the vehicle needs to meet its orbit requirements (Vor, Aor). The function
 	// interpolates the trajectory as a linear function
@@ -297,14 +115,14 @@ func (r *VEHICLE) OpenLoop() {
 
 	// calculate deltaV to reach orbit:
 	//deltaAltitude := Profile.OrbitInsertion - r.Stages[i].altitude
-	deltaV := TargetOrbitalVelocity - r.Stages[STAGE2].AVel
+	deltaV := TargetOrbitalVelocity - r.Stages[STAGE2].avelocity
 	if deltaV < TargetOrbitalVelocity*0.01 { //*0.0045 { //220 {
 		//fmt.Println(deltaV)
 		//r.Stages[STAGE2].ThrottleRate = (profile.OrbitInsertion - r.Stages[STAGE2].altitude) / profile.OrbitInsertion
 
 		r.Stages[STAGE2].ThrottleRate = deltaV / TargetOrbitalVelocity
 
-		//r.Stages[STAGE2].ThrottleRate = 1 - (math.Log((r.Stages[STAGE2].altitude * r.Stages[STAGE2].AVel) / (profile.OrbitInsertion * TargetOrbitalVelocity)))
+		//r.Stages[STAGE2].ThrottleRate = 1 - (math.Log((r.Stages[STAGE2].altitude * r.Stages[STAGE2].avelocity) / (profile.OrbitInsertion * TargetOrbitalVelocity)))
 		//r.Stages[STAGE2].ThrottleRate = 1 - ((r.Stages[STAGE2].altitude - mecoAltitude) / profile.OrbitInsertion)
 
 	}
@@ -320,200 +138,169 @@ func (r *VEHICLE) timeStep(i int32) { // i = stage
 	if r.SysGuidance._stagesep && i == 0 {
 		fmt.Println("#############################################")
 	}
-
+	gh := g0
 	if r.SysGuidance._release {
-		aerodynPressure = 0.5 * rho(r.Stages[i].DTF-Re) * r.Stages[i].VRelative * r.Stages[i].VRelative // * 1e-3 // Aerodynamic stress
+		//		aerodynPressure := 0.5 * r.Stages[i].density * r.Stages[i].rvelocity * r.Stages[i].rvelocity // * 1e-3 // Aerodynamic stress
+		aerodynPressure := 0.5 * r.Stages[i].density * math.Pow(r.Stages[i].rvelocity, 2) // * 1e-3 // Aerodynamic stress
 
 		//fmt.Println("Current Q=", aerodynPressure, " vs MaxQ=", r.MaxQ)
 		if i == BOOSTER && !r.SysGuidance._MECO1 && aerodynPressure > mQ.MaxQ {
 			//fmt.Println("########################")
 			mQ.MaxQ = aerodynPressure
 			mQ.Alt = r.Stages[i].altitude
-			mQ.Velocity = r.Stages[i].VRelative
+			mQ.Velocity = r.Stages[i].rvelocity
 			mQ.Range = r.Stages[i].drange
 			mQ.Angle = rad2deg(r.Stages[i].gamma)
 			mQ.Time = r.Stages[i].Clock
 			mQ.RhoMQ = rho(r.Stages[i].DTF - Re)
 		}
 
-		/*		if aerodynPressure > r.MaxQ {
-				if i == STAGE2 {
-					panic("something is wrong")
-				}
-				r.MaxQ = aerodynPressure
-				r.AltMaxQ = r.Stages[BOOSTER].altitude
-			}*/
-		drag = (0.5) * r.Stages[i].Cd * r.Stages[i].CSArea * rho(r.Stages[i].DTF-Re) * r.Stages[i].VRelative * r.Stages[i].VRelative // Drag
-		r.Stages[i].Thrust = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * r.GetThrust(r.Stages[i].DTF, i)        // Thrust
-		// calculate force and velocity vectors norm
-		gh := g(r.Stages[i].DTF)
+		// calculate drag and thrust for the current altitude
+		//drag = (0.5) * r.Stages[i].Cd * r.Stages[i].CSArea * rho(r.Stages[i].DTF-Re) * r.Stages[i].rvelocity * r.Stages[i].rvelocity // Drag
+
+		//		r.SetDrag(i)                                                                                                          // ?? probalbly should be set at the end of step()
+		r.Stages[i].Thrust = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * r.GetThrust(i) // Thrust
+
+		// calculate gravity at current altitude
+		gh = g(r.Stages[i].DTF)
 		if r.Stages[i].vAy < 0 {
+			// we are coming down
 			drag *= -1
 		}
-		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].Mass*gh*math.Sin(r.Stages[i].gamma)
-		//if r.Stages[i].Force < 0 {
-		//	fmt.Println(r.Stages[i].Force)
-		//}
-		//		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].Mass*(gh-math.Pow(r.Stages[i].AVel*math.Cos(r.Stages[i].gamma), 2)/(Re+r.Stages[i].altitude))*math.Sin(r.Stages[i].gamma)
 
-		//		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].Mass*(gh-math.Pow(r.Stages[i].vAx, 2)/(Re+r.Stages[i].altitude))*math.Sin(r.Stages[i].gamma)
-		///////////////////////
+		if false {
+			// speed magnitude
+			//    v(l+1) = v(l) + (t_c(l)/m_c(l) - D(l)/m_c(l) - gc*sin(gam(l)))*k;
+			r.Stages[i].t_rvelocity = r.Stages[i].rvelocity + (((r.Stages[i].Thrust-r.Stages[i].drag)/r.Stages[i].mass)-gh*math.Sin(r.Stages[i].gamma))*r.Stages[i].dt
 
-		r.Stages[i].ax = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) * math.Sin(deg2rad(profile.LaunchAzimuth)) / r.Stages[i].Mass
-		r.Stages[i].az = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) * math.Cos(deg2rad(profile.LaunchAzimuth)) / r.Stages[i].Mass
-		r.Stages[i].ay = r.Stages[i].Force * math.Sin(r.Stages[i].gamma) / r.Stages[i].Mass
+			// distance downrange
+			//x(l+1) = x(l) + (Re/(Re+y(l))*v(l)*cos(gam(l)))*k;
+			r.Stages[i].t_drange = r.Stages[i].drange + (Re/(Re+r.Stages[i].altitude)*r.Stages[i].rvelocity*math.Cos(r.Stages[i].gamma))*r.Stages[i].dt
 
-		///////////////////////
-		// THE FOLLLOWING WORKS AND NEEDS TO BE UNCOMMENTED
-		//r.Stages[i].ax = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) / r.Stages[i].Mass
-		//r.Stages[i].ay = r.Stages[i].Force * math.Sin(r.Stages[i].gamma) / r.Stages[i].Mass
-		///////////////
-		// update downrange first dx/dt = (Re/(Re+h))*v*cos(gamma)
-		// since we are using altitude in the range calculation formula, calculate range first so that both
-		// altitude and range are calculated simultaneously
-		// first update range as a fonction of old relative speed, old altitude and "dt" time increment
-		r.Stages[i].drange = (Re/(Re+r.Stages[i].altitude))*r.Stages[i].RVel*math.Cos(r.Stages[i].gamma)*r.Stages[i].dt + r.Stages[i].drange
-
-		// second update altitude: dh/dt = v.sin(gamma) as a function of old relative speed and time increment "dt"
-		r.Stages[i].altitude = r.Stages[i].RVel*math.Sin(r.Stages[i].gamma)*r.Stages[i].dt + r.Stages[i].altitude
-
-		dgamma = r.TwoPhaseTangentSteering(i)
-
+			// altitude
+			//y(l+1) = y(l) + (v(l)*sin(gam(l)))*k;
+			r.Stages[i].t_altitude = r.Stages[i].altitude + (r.Stages[i].rvelocity*math.Sin(r.Stages[i].gamma))*r.Stages[i].dt
+		}
 		// calculate cartesian coordinates
 		r.Stages[i].beta = r.Stages[i].drange / Re // polar angle (in rd) based on downrange value
+
 		// when beta greater than 2xPI, we have orbit
 		if r.Stages[i].beta >= 2*math.Pi {
 			orbit = true
 		}
 		r.Stages[i].px = (Re + r.Stages[i].altitude) * math.Sin(r.Stages[i].beta) * math.Sin(deg2rad(profile.LaunchAzimuth))
-		r.Stages[i].py = (Re + r.Stages[i].altitude) * math.Cos(r.Stages[i].beta)
 		r.Stages[i].pz = (Re + r.Stages[i].altitude) * math.Sin(r.Stages[i].beta) * math.Cos(deg2rad(profile.LaunchAzimuth))
+		r.Stages[i].py = (Re + r.Stages[i].altitude) * math.Cos(r.Stages[i].beta)
+
+		////////////////////////
+
+		// calculate force and velocity vectors norm
+		r.Stages[i].Force = (r.Stages[i].Thrust - r.Stages[i].drag) - r.Stages[i].mass*gh*math.Sin(r.Stages[i].gamma)
+
+		// acceleration components
+		r.Stages[i].ax = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) * math.Sin(deg2rad(profile.LaunchAzimuth)) / r.Stages[i].mass
+		r.Stages[i].az = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) * math.Cos(deg2rad(profile.LaunchAzimuth)) / r.Stages[i].mass
+		r.Stages[i].ay = r.Stages[i].Force * math.Sin(r.Stages[i].gamma) / r.Stages[i].mass
+
+		///////////////////////
+		// THE FOLLLOWING WORKS AND NEEDS TO BE UNCOMMENTED
+		//r.Stages[i].ax = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) / r.Stages[i].mass
+		//r.Stages[i].ay = r.Stages[i].Force * math.Sin(r.Stages[i].gamma) / r.Stages[i].mass
+		///////////////
+		// update downrange first dx/dt = (Re/(Re+h))*v*cos(gamma)
+		// since we are using altitude in the range calculation formula, calculate range first so that both
+		// altitude and range are calculated simultaneously
+		// first update range as a fonction of old relative speed, old altitude and "dt" time increment
+
+		//r.Stages[i].drange = r.Stages[i].drange + (Re/(Re+r.Stages[i].altitude))*r.Stages[i].rvelocity*math.Cos(r.Stages[i].gamma)*r.Stages[i].dt
+
+		// second update altitude: dh/dt = v.sin(gamma) as a function of old relative speed and time increment "dt"
+		//r.Stages[i].altitude = r.Stages[i].rvelocity*math.Sin(r.Stages[i].gamma)*r.Stages[i].dt + r.Stages[i].altitude
 
 		// NEW NEW
-		r.Stages[i].VAbsolute = r.Stages[i].AVel
-		r.Stages[i].VRelative = r.Stages[i].RVel
+		r.Stages[i].avelocity = r.Stages[i].rvelocity + vE
+		//		r.Stages[i].avelocity = r.Stages[i].avelocity
+		//r.Stages[i].rvelocity = r.Stages[i].rvelocity
 		r.Stages[i].DTF = Re + r.Stages[i].altitude
-		r.Stages[i].Acc = r.Stages[i].Force / r.Stages[i].Mass //math.Sqrt(r.Stages[i].ax * r.Stages[i].ax + r.Stages[i].ay * r.Stages[i].ay)
+		r.Stages[i].Acc = r.Stages[i].Force / r.Stages[i].mass //math.Sqrt(r.Stages[i].ax * r.Stages[i].ax + r.Stages[i].ay * r.Stages[i].ay)
 
 		// update velocities
-		r.Stages[i].RVel = r.Stages[i].RVel + (r.Stages[i].Force/r.Stages[i].Mass)*r.Stages[i].dt
-		r.Stages[i].AVel = r.Stages[i].RVel + vE
+		//r.Stages[i].rvelocity = r.Stages[i].rvelocity + (r.Stages[i].Force/r.Stages[i].mass)*r.Stages[i].dt
+		//r.Stages[i].avelocity = r.Stages[i].rvelocity + vE
+
+		// calculate updates
+		//dgamma = r.TwoPhaseTangentSteering(i)
+		dgamma = r.GravityTurnWithTangentSteering(i)
+
+		//dgamma = r.gravTurnMultiPhaseTangentSteering(i)
+		//dgamma = r.gravTurnClassic(i)
+		r.UpdateDensity(i)
+		r.UpdateDrag(i)
+		r.EulerUpdate(i, gh)
 	}
 
-	if r.Stages[i].gamma >= math.Abs(dgamma) {
-		r.Stages[i].gamma = r.Stages[i].gamma + dgamma //- math.Abs(dgamma)
-	} else {
-		r.Stages[i].gamma = 0
-	}
-
-	if r.SysGuidance._MEI1 {
+	if r.SysGuidance._MEI1 || r.SysGuidance._SEI1 {
 		if r.Stages[i].Mf < 0.05 {
 			//fmt.Printf("STAGE %v ", r.Stages[i]) //, "is EMPTY!!!!")
 			r.Stages[i].RunningEngines = 0
-			fmt.Printf("\n************\nPrematured MECO @ ---> %g seconds\n", r.Stages[i].Clock) //(-3*M_PI/2+v.Stages[STAGE2].beta-v.Stages[STAGE2].beta)*180/M_PI)
-			fmt.Println("Remaining fuel ...... ", r.Stages[i].Mf, "kg")                          //(-3*M_PI/2+v.Stages[STAGE2].beta-v.Stages[STAGE2].beta)*180/M_PI)
-			fmt.Println("Velocity ............ ", r.Stages[i].RVel*3.6, "km/h")                  //(-3*M_PI/2+v.Stages[STAGE2].beta-v.Stages[STAGE2].beta)*180/M_PI)
+			r.Stages[i].Mf = 0
+			fmt.Printf("\n************\nPrematured Engine cut-off @ ---> %g seconds\n", r.Stages[i].Clock) //(-3*M_PI/2+v.Stages[STAGE2].beta-v.Stages[STAGE2].beta)*180/M_PI)
+			fmt.Println("Stage ............... ", i)
+			fmt.Println("Remaining fuel ...... ", r.Stages[i].Mf, "kg")              //(-3*M_PI/2+v.Stages[STAGE2].beta-v.Stages[STAGE2].beta)*180/M_PI)
+			fmt.Println("Velocity ............ ", r.Stages[i].avelocity*3.6, "km/h") //(-3*M_PI/2+v.Stages[STAGE2].beta-v.Stages[STAGE2].beta)*180/M_PI)
 			r.SysGuidance._MECO1 = r.MSECO(BOOSTER, data.E_MECO_1)
 			r.SysGuidance._MEI1 = false
 			return
 		}
-		r.OpenLoop()
-		//fmt.Println(int(r.Stages[i].Clock), "STAGE", i, "fuel left:", r.Stages[i].Mf)
-		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * EnginesMap[r.Stages[i].EngineID].Flow_rate * r.Stages[i].dt
-		r.Stages[i].Mf = r.Stages[i].Mf - dm
-		r.Stages[i].Mass = r.Stages[i].Mass - dm
+		// update mass and pitch if engine is ON
+		r.UpdateMass(i)
+		if r.Stages[i].gamma >= math.Abs(dgamma) {
+			r.Stages[i].gamma = r.Stages[i].gamma - math.Abs(dgamma)
+		} else {
+			r.Stages[i].gamma = 0
+		}
 	}
-
-	//	fmt.Println("gamma = ", rad2deg(r.Stages[i].gamma))
 }
 
-func (r *VEHICLE) timeStepSAVE(i int32) { // i = stage
-
-	dgamma := float64(0.0)
-	if r.SysGuidance._MEI1 {
-		dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * EnginesMap[r.Stages[i].EngineID].Flow_rate * r.Stages[i].dt
-		r.Stages[i].Mf = r.Stages[i].Mf - dm
-		r.Stages[i].Mass = r.Stages[i].Mass - dm
-	}
-
-	if r.SysGuidance._release {
-		aerodynPressure = 0.5 * rho(r.Stages[i].DTF-Re) * r.Stages[i].VRelative * r.Stages[i].VRelative * 1e-3                       // Aerodynamic stress
-		drag = (0.5) * r.Stages[i].Cd * r.Stages[i].CSArea * rho(r.Stages[i].DTF-Re) * r.Stages[i].VRelative * r.Stages[i].VRelative // Drag
-		r.Stages[i].Thrust = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * r.GetThrust(r.Stages[i].DTF, i)        // Thrust
-
-		// calculate force and velocity vectors norm
-		gh := g(r.Stages[i].DTF)
-		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].Mass*gh*math.Sin(r.Stages[i].gamma)
-
-		r.Stages[i].RVel = r.Stages[i].RVel + (r.Stages[i].Force/r.Stages[i].Mass)*r.Stages[i].dt
-		r.Stages[i].AVel = r.Stages[i].RVel + vE
-
-		// calculate altitude: dh/dt = v.sin(gamma)
-		r.Stages[i].altitude = r.Stages[i].RVel*math.Sin(r.Stages[i].gamma)*r.Stages[i].dt + r.Stages[i].altitude
-
-		// calculate downrange dx/dt = (Re/(Re+h))*v*cos(gamma)
-		r.Stages[i].drange = (Re/(Re+r.Stages[i].altitude))*r.Stages[i].RVel*math.Cos(r.Stages[i].gamma)*r.Stages[i].dt + r.Stages[i].drange
-
-		// calculate dgamma/dt = -(g - v*v/(Re+h)) * cos(gamma) * 1/v
-		//dgamma = -(gh - (r.Stages[i].Vel * r.Stages[i].Vel)/(Re + r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma) * (1/r.Stages[i].Vel)
-		// dgamma = gamma /()
-		//		dgamma = (profile.OrbitPerigee - r.Stages[i].altitude)*1e-3 / (profile.BurnoutTime - r.Stages[i].Clock)
-
-		dgamma = r.gravTurnMultiPhaseTangentSteering(i)
-
-		//dgamma = r.gravTurn(i)
-
-		// calculate cartesian coordinates
-		r.Stages[i].beta = r.Stages[i].drange / Re // polar angle (in rd) based on downrange value
-		r.Stages[i].px = (Re + r.Stages[i].altitude) * math.Sin(r.Stages[i].beta)
-		r.Stages[i].py = (Re + r.Stages[i].altitude) * math.Cos(r.Stages[i].beta)
-
-		// x-direction
-		//		r.Stages[i].ForceX = r.Stages[i].Thrust * math.Cos(r.Stages[i].gamma) - drag * math.Cos(r.Stages[i].beta) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Cos(r.Stages[i].beta)
-		//		r.Stages[i].ForceX = r.Stages[i].Force * math.Cos(r.Stages[i].gamma)
-		//		r.Stages[i].px = r.Stages[i].px + r.Stages[i].vAx * r.Stages[i].dt
-		r.Stages[i].ax = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) / r.Stages[i].Mass
-
-		r.Stages[i].vRx = r.Stages[i].vRx + r.Stages[i].ax*r.Stages[i].dt
-		r.Stages[i].vAx = r.Stages[i].vRx + vE //* math.Sin(r.Stages[i].beta)
-
-		// y-direction
-		//		r.Stages[i].ForceY = r.Stages[i].Thrust * math.Sin(r.Stages[i].gamma) - drag * math.Sin(r.Stages[i].beta) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Sin(r.Stages[i].beta)
-		//		r.Stages[i].py = r.Stages[i].py + r.Stages[i].vAy * r.Stages[i].dt
-		r.Stages[i].ay = r.Stages[i].Force * math.Sin(r.Stages[i].gamma) / r.Stages[i].Mass
-
-		r.Stages[i].vAy = r.Stages[i].vAy + r.Stages[i].ay*r.Stages[i].dt
-		r.Stages[i].vRy = r.Stages[i].vAy //- vE * math.Cos(M_PI + r.Stages[i].beta)
-
-		r.Stages[i].DTF = math.Sqrt(r.Stages[i].px*r.Stages[i].px + r.Stages[i].py*r.Stages[i].py)
-		r.Stages[i].VAbsolute = math.Sqrt(r.Stages[i].vAx*r.Stages[i].vAx + r.Stages[i].vAy*r.Stages[i].vAy)
-		r.Stages[i].VRelative = math.Sqrt(r.Stages[i].vRx*r.Stages[i].vRx + r.Stages[i].vRy*r.Stages[i].vRy)
-		r.Stages[i].Acc = r.Stages[i].Force / r.Stages[i].Mass //math.Sqrt(r.Stages[i].ax * r.Stages[i].ax + r.Stages[i].ay * r.Stages[i].ay)
-	}
-	/*
-		if r.SysGuidance._BBURN  || r.SysGuidance._LBURN {
-			r.flip(0)
-		}
-		if r.SysGuidance._LBURN && mod(r.Stages[i].Clock, 5) < r.Stages[i].dt {
-			r.update_landing_throttle()
-		}
-	*/
-
-	/*
-		r.Stages[i].px = r.Stages[i].px + r.Stages[i].vAx * r.Stages[i].dt
-		r.Stages[i].py = r.Stages[i].py + r.Stages[i].vAy * r.Stages[i].dt
-	*/
-	if r.Stages[i].gamma >= math.Abs(dgamma) {
-		r.Stages[i].gamma = r.Stages[i].gamma + dgamma //- math.Abs(dgamma)
-	} else {
-		r.Stages[i].gamma = 0
-	}
-
-	//	fmt.Println("gamma = ", rad2deg(r.Stages[i].gamma))
+func (r *VEHICLE) UpdateMass(i int32) {
+	dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * EnginesMap[r.Stages[i].EngineID].Flow_rate * r.Stages[i].dt
+	r.Stages[i].mass = r.Stages[i].mass - dm
+	r.Stages[i].Mf = r.Stages[i].Mf - dm
 }
 
-var nearOrbit = false
-var gammabits float64
+func (r *VEHICLE) EulerUpdate(i int32, gh float64) {
+
+	// speed magnitude
+	//    v(l+1) = v(l) + (t_c(l)/m_c(l) - D(l)/m_c(l) - gc*sin(gam(l)))*k;
+	r.Stages[i].t_rvelocity = r.Stages[i].rvelocity + (((r.Stages[i].Thrust-r.Stages[i].drag)/r.Stages[i].mass)-gh*math.Sin(r.Stages[i].gamma))*r.Stages[i].dt
+
+	// distance downrange
+	//x(l+1) = x(l) + (Re/(Re+y(l))*v(l)*cos(gam(l)))*k;
+	r.Stages[i].t_drange = r.Stages[i].drange + (Re/(Re+r.Stages[i].altitude)*r.Stages[i].rvelocity*math.Cos(r.Stages[i].gamma))*r.Stages[i].dt
+
+	// altitude
+	//y(l+1) = y(l) + (v(l)*sin(gam(l)))*k;
+	r.Stages[i].t_altitude = r.Stages[i].altitude + (r.Stages[i].rvelocity*math.Sin(r.Stages[i].gamma))*r.Stages[i].dt
+
+	r.Stages[i].drag = r.Stages[i].t_drag
+	r.Stages[i].density = r.Stages[i].t_density
+	r.Stages[i].rvelocity = r.Stages[i].t_rvelocity
+	r.Stages[i].avelocity = r.Stages[i].rvelocity + vE
+	r.Stages[i].drange = r.Stages[i].t_drange
+	r.Stages[i].altitude = r.Stages[i].t_altitude
+	//r.Stages[i].mass = r.Stages[i].t_mass
+	//r.Stages[i].Mf = r.Stages[i].t_Mf
+
+	//	dm = float64(r.Stages[i].RunningEngines) * r.Stages[i].ThrottleRate * EnginesMap[r.Stages[i].EngineID].Flow_rate * r.Stages[i].dt
+	//	r.Stages[i].t_mass = r.Stages[i].mass - dm
+	//	r.Stages[i].Mf = r.Stages[i].Mf - dm
+
+	r.Stages[i].atmoPressure = r.Stages[i].t_atmoPressure
+	r.Stages[i].temp = r.Stages[i].t_temp
+}
+
+//var nearOrbit = false
+//var gammabits float64
 
 // gravTurnClassic ------------------------------------------------------------
 // steering program using differential equation to calculate instant rate if
@@ -529,27 +316,52 @@ func (r *VEHICLE) gravTurnClassic(i int32) float64 {
 				return 0
 			}
 		}
+
+		/*
+			%path angle gam (from 90 to 0 degrees)
+			if l <= 15/k
+				gam(l+1) = gam(l);
+			elseif 15/k < l <= 17/k
+				gam(l+1) = gam(l) - 0.0032*gam(l);
+			else
+				gam(l+1) = gam(l) - ((gc/v(l) - v(l)/(Re+y(l)))*cos(gam(l)))*k;
+			end
+		*/
 		gh := g(r.Stages[i].DTF)
-		instantDeviation := -(1 / r.Stages[i].RVel) * (gh - (math.Pow(r.Stages[i].RVel, 2))/(Re+r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma) //* r.Stages[i].dt
-		return instantDeviation * r.Stages[i].dt
+		dgamma := 0.0
+		if r.Stages[i].Clock > profile.PitchTime && r.Stages[i].Clock <= profile.PitchTime+2 {
+			//dgamma = 0.00009 * r.Stages[i].gamma
+			dgamma = 0.5 * r.Stages[i].dt / 2000
+		} else {
+			/*if r.Stages[i].Clock > profile.PitchTime && r.Stages[i].Clock <= profile.PitchTime+2 {
+				//dgamma = 0.0032 * r.Stages[i].gamma
+				dgamma = 0.00009 * r.Stages[i].gamma
+			} else {*/
+			//fmt.Println("GT is ON...")
+			dgamma = ((gh/r.Stages[i].rvelocity - r.Stages[i].rvelocity/(Re+r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma)) * r.Stages[i].dt
+		}
+		//instantDeviation := -(1 / r.Stages[i].rvelocity) * (gh - (math.Pow(r.Stages[i].rvelocity, 2))/(Re+r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma) //* r.Stages[i].dt
+		//return instantDeviation * r.Stages[i].dt
+		return dgamma
 	}
 	return 0
 }
 
 var GAMMA0 = M_PI / 2 //- 0.01
-const GAMMA0_DEG = float64(90)
+//const GAMMA0_DEG = float64(90)
 
-var phase1Gamma0 = GAMMA0
-var PHASEROLL15 = deg2rad(15)
-var PHASEROLL05 = deg2rad(5)
+//var phase1Gamma0 = GAMMA0
 
-var phase2Gamma0 = GAMMA0 - PHASEROLL05
+//var PHASEROLL15 = deg2rad(15)
+//var PHASEROLL05 = deg2rad(5)
 
-const PHASE1_ALTITUDE = 15000
+//var phase2Gamma0 = GAMMA0 - PHASEROLL05
 
-var switch2phase2 = false
+//const PHASE1_ALTITUDE = 15000
 
-const PHASE2_ALTITUDE = 15000
+//var switch2phase2 = false
+
+//const PHASE2_ALTITUDE = 15000
 
 type AscentPhase struct {
 	startingTime     float64
@@ -559,14 +371,85 @@ type AscentPhase struct {
 	angleDeviation   float64
 }
 
+type AscentPhaseAltitudeOnly struct {
+	startingAltitude float64
+	endingAltitude   float64
+	angleDeviation   float64
+}
 type AscentSet struct {
 	currentPhase  int
 	nphases       int
+	nphasesAO     int
 	deviationLeft float64
 	aPhases       []AscentPhase
+	aPhasesAO     []AscentPhaseAltitudeOnly
 }
 
 var asc AscentSet
+
+// GravityTurnWidthTangentSteering ----------------------------------------------------------
+// steering program using time-to-MECO as first phase with gravity turn
+// algorithm and distance-to-orbit as  second phase
+// ----------------------------------------------------------------------------
+func (r *VEHICLE) GravityTurnWithTangentSteering(i int32) float64 {
+	if r.SysGuidance._pitch {
+		// after stage sep, we don't care about booster gravity turn
+		if r.SysGuidance._stagesep {
+			// if we have a stage separation, we don't care of the booster, but if it is the
+			// second stage, make sure to have engine ignition before continuing the steering program
+			if i == BOOSTER || !r.SysGuidance._SEI1 {
+				return 0
+			}
+		}
+
+		// implements: tanθ(t)=tan(θ0) *(1 - altitude/orbitInsertion)
+		if asc.currentPhase == 0 {
+			//////////////////////////
+			//			if r.SysGuidance._MECO1 {
+			if r.Stages[i].altitude > 20000 {
+
+				//	asc.deviationLeft = asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)
+				asc.deviationLeft = r.Stages[i].gamma //GAMMA0 - r.Stages[i].gamma
+				//asc.deviationLeft = asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)
+				asc.currentPhase += 1
+				asc.aPhases[asc.currentPhase].startingAltitude = r.Stages[i].altitude
+				asc.aPhases[asc.currentPhase].angleDeviation = rad2deg(r.Stages[i].gamma)
+				//fmt.Println("1111111111111 ", asc.aPhases[asc.currentPhase].startingAltitude)
+				//fmt.Println("2222222222222 ", asc.aPhases[asc.currentPhase].endingAltitude)
+				//fmt.Println("3333333333333 ", rad2deg(asc.deviationLeft))
+				return 0
+			} else {
+				gh := g(r.Stages[i].DTF)
+				dgamma := 0.0
+				if r.Stages[i].Clock > profile.PitchTime && r.Stages[i].Clock <= profile.PitchTime+2 {
+					// initial pitch program
+					dgamma = 0.004 * r.Stages[i].gamma * tinc
+					//dgamma = 0.5 * r.Stages[i].dt / 500
+					//				asc.deviationLeft -= dgamma
+				} else {
+					/*if r.Stages[i].Clock > profile.PitchTime && r.Stages[i].Clock <= profile.PitchTime+2 {
+						//dgamma = 0.0032 * r.Stages[i].gamma
+						dgamma = 0.00009 * r.Stages[i].gamma
+					} else {*/
+					//fmt.Println("GT is ON...")
+					// gravity turn formula
+					dgamma = ((gh/r.Stages[i].rvelocity - r.Stages[i].rvelocity/(Re+r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma)) * r.Stages[i].dt
+				}
+				//				asc.deviationLeft -= dgamma
+				return dgamma
+			}
+		}
+		if r.Stages[i].altitude <= asc.aPhases[asc.currentPhase].endingAltitude {
+			gamma := asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)*((r.Stages[i].altitude-asc.aPhases[asc.currentPhase].startingAltitude)/(asc.aPhases[asc.currentPhase].endingAltitude-asc.aPhases[asc.currentPhase].startingAltitude))
+			//			return gamma - r.Stages[i].gamma
+			//fmt.Println("DGAMMA=", r.Stages[i].gamma-gamma)
+			return r.Stages[i].gamma - gamma
+		}
+		//fmt.Println(r.Stages[i].altitude, asc.aPhases[asc.currentPhase].endingAltitude)
+		return 0
+	}
+	return 0
+}
 
 // TwoPhaseTangentSteering ----------------------------------------------------
 // steering program using time-to-MECO as first phase and distance-to-orbit as
@@ -587,8 +470,10 @@ func (r *VEHICLE) TwoPhaseTangentSteering(i int32) float64 {
 		if asc.currentPhase == 0 {
 			// during first phase, we use time as a dividing factor (essentially time between PITCH and MECO)
 			if r.Stages[i].Clock <= asc.aPhases[asc.currentPhase].endingTime {
+				// calculate g = angle_left - phase_deviation * [altitude - starting_altitude]/[ending_altitude - starting_alltitude]
 				gamma := asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)*((r.Stages[i].Clock-asc.aPhases[asc.currentPhase].startingTime)/(asc.aPhases[asc.currentPhase].endingTime-asc.aPhases[asc.currentPhase].startingTime))
-				return gamma - r.Stages[i].gamma
+				//				return gamma - r.Stages[i].gamma
+				return r.Stages[i].gamma - gamma
 			}
 			// as we passed endTime, we enter the second phase where the dividing factor is altitude (essentially
 			// between MECO altitude and target orbit altitude)
@@ -598,7 +483,8 @@ func (r *VEHICLE) TwoPhaseTangentSteering(i int32) float64 {
 		}
 		if r.Stages[i].altitude <= asc.aPhases[asc.currentPhase].endingAltitude {
 			gamma := asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)*((r.Stages[i].altitude-asc.aPhases[asc.currentPhase].startingAltitude)/(asc.aPhases[asc.currentPhase].endingAltitude-asc.aPhases[asc.currentPhase].startingAltitude))
-			return gamma - r.Stages[i].gamma
+			//			return gamma - r.Stages[i].gamma
+			return r.Stages[i].gamma - gamma
 		}
 		return 0
 	}
@@ -620,16 +506,18 @@ func (r *VEHICLE) gravTurnMultiPhaseTangentSteering(i int32) float64 {
 		}
 
 		for true {
-			if r.Stages[i].altitude <= asc.aPhases[asc.currentPhase].endingAltitude {
-				gamma := asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)*((r.Stages[i].altitude-asc.aPhases[asc.currentPhase].startingAltitude)/(asc.aPhases[asc.currentPhase].endingAltitude-asc.aPhases[asc.currentPhase].startingAltitude))
+			if r.Stages[i].altitude <= asc.aPhasesAO[asc.currentPhase].endingAltitude {
+				// calculate g = angle_left - phase_deviation * [altitude - starting_altitude]/[ending_altitude - starting_alltitude]
+				gamma := asc.deviationLeft - deg2rad(asc.aPhasesAO[asc.currentPhase].angleDeviation)*((r.Stages[i].altitude-asc.aPhasesAO[asc.currentPhase].startingAltitude)/(asc.aPhasesAO[asc.currentPhase].endingAltitude-asc.aPhasesAO[asc.currentPhase].startingAltitude))
 				if asc.currentPhase == len(asc.aPhases)-1 {
 					//gamma = gamma + profile.InjectionAngle
 				}
-				return gamma - r.Stages[i].gamma
+				//				return gamma - r.Stages[i].gamma
+				return r.Stages[i].gamma - gamma
 			} else {
-				asc.deviationLeft = asc.deviationLeft - deg2rad(asc.aPhases[asc.currentPhase].angleDeviation)
+				asc.deviationLeft = asc.deviationLeft - deg2rad(asc.aPhasesAO[asc.currentPhase].angleDeviation)
 				asc.currentPhase += 1
-				if asc.currentPhase < asc.nphases {
+				if asc.currentPhase < asc.nphasesAO {
 					continue
 				}
 				asc.currentPhase -= 1
@@ -657,7 +545,8 @@ func (r *VEHICLE) gravTurnSimpleTangentSteering(i int32) float64 {
 		// gamma := math.Atan(math.Tan(GAMMA0 * (1 - altitude/profile.OrbitInsertion)))
 		if r.Stages[i].altitude <= profile.OrbitInsertion {
 			gamma := GAMMA0 * (1 - (r.Stages[i].altitude)/(profile.OrbitInsertion))
-			return gamma - r.Stages[i].gamma
+			//			return gamma - r.Stages[i].gamma
+			return r.Stages[i].gamma - gamma
 		} else {
 			r.Stages[i].gamma = 0
 			return 0
@@ -735,7 +624,8 @@ func (r *VEHICLE) gravTurnProgrammedTwoPhaseSteering(i int32) float64 {
 			// second phase
 			if r.Stages[i].altitude <= profile.OrbitInsertion {
 				gamma := GammaPhase2 * (1 - (r.Stages[i].altitude)/(profile.OrbitInsertion))
-				return gamma - r.Stages[i].gamma
+				//	return gamma - r.Stages[i].gamma
+				return r.Stages[i].gamma - gamma
 			} else {
 				r.Stages[i].gamma = 0
 				return 0
@@ -750,26 +640,26 @@ func (r *VEHICLE) landingTimeStep() { // i = stage
 	dgamma := float64(0.0)
 
 	if r.SysGuidance._release {
-		aerodynPressure = 0.5 * rho(r.Stages[BOOSTER].DTF-Re) * r.Stages[BOOSTER].VRelative * r.Stages[BOOSTER].VRelative * 1e-3                                   // Aerodynamic stress
-		drag = (0.5) * r.Stages[BOOSTER].Cd * r.Stages[BOOSTER].CSArea * rho(r.Stages[BOOSTER].DTF-Re) * r.Stages[BOOSTER].VRelative * r.Stages[BOOSTER].VRelative // Drag
-		r.Stages[BOOSTER].Thrust = float64(r.Stages[BOOSTER].RunningEngines) * r.Stages[BOOSTER].ThrottleRate * r.GetThrust(r.Stages[BOOSTER].DTF, BOOSTER)        // Thrust
+		aerodynPressure = 0.5 * rho(r.Stages[BOOSTER].DTF-Re) * r.Stages[BOOSTER].rvelocity * r.Stages[BOOSTER].rvelocity * 1e-3                                   // Aerodynamic stress
+		drag = (0.5) * r.Stages[BOOSTER].Cd * r.Stages[BOOSTER].CSArea * rho(r.Stages[BOOSTER].DTF-Re) * r.Stages[BOOSTER].rvelocity * r.Stages[BOOSTER].rvelocity // Drag
+		r.Stages[BOOSTER].Thrust = float64(r.Stages[BOOSTER].RunningEngines) * r.Stages[BOOSTER].ThrottleRate * r.GetThrust(BOOSTER)                               // Thrust
 
 		// calculate force and velocity vectors norm
 		gh := g(r.Stages[BOOSTER].DTF)
-		r.Stages[BOOSTER].Force = (r.Stages[BOOSTER].Thrust + drag) - r.Stages[BOOSTER].Mass*gh*math.Sin(r.Stages[BOOSTER].gamma)
-		//		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].Mass*(gh-math.Pow(r.Stages[i].AVel*math.Cos(r.Stages[i].gamma), 2)/(Re+r.Stages[i].altitude))*math.Sin(r.Stages[i].gamma)
+		r.Stages[BOOSTER].Force = (r.Stages[BOOSTER].Thrust + drag) - r.Stages[BOOSTER].mass*gh*math.Sin(r.Stages[BOOSTER].gamma)
+		//		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].mass*(gh-math.Pow(r.Stages[i].avelocity*math.Cos(r.Stages[i].gamma), 2)/(Re+r.Stages[i].altitude))*math.Sin(r.Stages[i].gamma)
 
-		//		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].Mass*(gh-math.Pow(r.Stages[i].vAx, 2)/(Re+r.Stages[i].altitude))*math.Sin(r.Stages[i].gamma)
-		r.Stages[BOOSTER].ax = r.Stages[BOOSTER].Force * math.Cos(r.Stages[BOOSTER].gamma) / r.Stages[BOOSTER].Mass
+		//		r.Stages[i].Force = (r.Stages[i].Thrust - drag) - r.Stages[i].mass*(gh-math.Pow(r.Stages[i].vAx, 2)/(Re+r.Stages[i].altitude))*math.Sin(r.Stages[i].gamma)
+		r.Stages[BOOSTER].ax = r.Stages[BOOSTER].Force * math.Cos(r.Stages[BOOSTER].gamma) / r.Stages[BOOSTER].mass
 
 		// update downrange first dx/dt = (Re/(Re+h))*v*cos(gamma)
 		// since we are using altitude in the range calculation formula, calculate range first so that both
 		// altitude and range are calculated simultaneously
 		// first update range as a fonction of old relative speed, old altitude and "dt" time increment
-		r.Stages[BOOSTER].drange = (Re/(Re+r.Stages[BOOSTER].altitude))*r.Stages[BOOSTER].RVel*math.Cos(r.Stages[BOOSTER].gamma)*r.Stages[BOOSTER].dt + r.Stages[BOOSTER].drange
+		r.Stages[BOOSTER].drange = (Re/(Re+r.Stages[BOOSTER].altitude))*r.Stages[BOOSTER].rvelocity*math.Cos(r.Stages[BOOSTER].gamma)*r.Stages[BOOSTER].dt + r.Stages[BOOSTER].drange
 
 		// second update altitude: dh/dt = v.sin(gamma) as a function of old relative speed and time increment "dt"
-		r.Stages[BOOSTER].altitude = r.Stages[BOOSTER].RVel*math.Sin(r.Stages[BOOSTER].gamma)*r.Stages[BOOSTER].dt + r.Stages[BOOSTER].altitude
+		r.Stages[BOOSTER].altitude = r.Stages[BOOSTER].rvelocity*math.Sin(r.Stages[BOOSTER].gamma)*r.Stages[BOOSTER].dt + r.Stages[BOOSTER].altitude
 
 		// calculate dgamma/dt = -(g - v*v/(Re+h)) * cos(gamma) * 1/v
 		//dgamma = -(gh - (r.Stages[i].Vel * r.Stages[i].Vel)/(Re + r.Stages[i].altitude)) * math.Cos(r.Stages[i].gamma) * (1/r.Stages[i].Vel)
@@ -797,43 +687,43 @@ func (r *VEHICLE) landingTimeStep() { // i = stage
 		if false {
 			/*			i := 0
 						// x-direction
-						//		r.Stages[i].ForceX = r.Stages[i].Thrust * math.Cos(r.Stages[i].gamma) - drag * math.Cos(r.Stages[i].beta) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Cos(r.Stages[i].beta)
+						//		r.Stages[i].ForceX = r.Stages[i].Thrust * math.Cos(r.Stages[i].gamma) - drag * math.Cos(r.Stages[i].beta) - r.Stages[i].mass * g(r.Stages[i].DTF) * math.Cos(r.Stages[i].beta)
 						//		r.Stages[i].ForceX = r.Stages[i].Force * math.Cos(r.Stages[i].gamma)
 						//		r.Stages[i].px = r.Stages[i].px + r.Stages[i].vAx * r.Stages[i].dt
-						r.Stages[i].ax = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) / r.Stages[i].Mass
+						r.Stages[i].ax = r.Stages[i].Force * math.Cos(r.Stages[i].gamma) / r.Stages[i].mass
 
 						r.Stages[i].vRx = r.Stages[i].vRx + r.Stages[i].ax*r.Stages[i].dt
 						r.Stages[i].vAx = r.Stages[i].vRx + vE //* math.Sin(r.Stages[i].beta)
 
 						// y-direction
-						//		r.Stages[i].ForceY = r.Stages[i].Thrust * math.Sin(r.Stages[i].gamma) - drag * math.Sin(r.Stages[i].beta) - r.Stages[i].Mass * g(r.Stages[i].DTF) * math.Sin(r.Stages[i].beta)
+						//		r.Stages[i].ForceY = r.Stages[i].Thrust * math.Sin(r.Stages[i].gamma) - drag * math.Sin(r.Stages[i].beta) - r.Stages[i].mass * g(r.Stages[i].DTF) * math.Sin(r.Stages[i].beta)
 						//		r.Stages[i].py = r.Stages[i].py + r.Stages[i].vAy * r.Stages[i].dt
-						r.Stages[i].ay = r.Stages[i].Force * math.Sin(r.Stages[i].gamma) / r.Stages[i].Mass
+						r.Stages[i].ay = r.Stages[i].Force * math.Sin(r.Stages[i].gamma) / r.Stages[i].mass
 
 						r.Stages[i].vAy = r.Stages[i].vAy + r.Stages[i].ay*r.Stages[i].dt
 						r.Stages[i].vRy = r.Stages[i].vAy //- vE * math.Cos(M_PI + r.Stages[i].beta)
 
 						r.Stages[i].DTF = math.Sqrt(r.Stages[i].px*r.Stages[i].px + r.Stages[i].py*r.Stages[i].py)
-						r.Stages[i].VAbsolute = math.Sqrt(r.Stages[i].vAx*r.Stages[i].vAx + r.Stages[i].vAy*r.Stages[i].vAy)
-						r.Stages[i].VRelative = math.Sqrt(r.Stages[i].vRx*r.Stages[i].vRx + r.Stages[i].vRy*r.Stages[i].vRy)
-						r.Stages[i].Acc = r.Stages[i].Force / r.Stages[i].Mass //math.Sqrt(r.Stages[i].ax * r.Stages[i].ax + r.Stages[i].ay * r.Stages[i].ay)
+						r.Stages[i].avelocity = math.Sqrt(r.Stages[i].vAx*r.Stages[i].vAx + r.Stages[i].vAy*r.Stages[i].vAy)
+						r.Stages[i].rvelocity = math.Sqrt(r.Stages[i].vRx*r.Stages[i].vRx + r.Stages[i].vRy*r.Stages[i].vRy)
+						r.Stages[i].Acc = r.Stages[i].Force / r.Stages[i].mass //math.Sqrt(r.Stages[i].ax * r.Stages[i].ax + r.Stages[i].ay * r.Stages[i].ay)
 			*/
 		} else {
 			// NEW NEW
-			r.Stages[BOOSTER].VAbsolute = r.Stages[BOOSTER].AVel
-			r.Stages[BOOSTER].VRelative = r.Stages[BOOSTER].RVel
+			r.Stages[BOOSTER].avelocity = r.Stages[BOOSTER].avelocity
+			r.Stages[BOOSTER].rvelocity = r.Stages[BOOSTER].rvelocity
 			r.Stages[BOOSTER].DTF = Re + r.Stages[BOOSTER].altitude
-			r.Stages[BOOSTER].Acc = r.Stages[BOOSTER].Force / r.Stages[BOOSTER].Mass //math.Sqrt(r.Stages[i].ax * r.Stages[i].ax + r.Stages[i].ay * r.Stages[i].ay)
+			r.Stages[BOOSTER].Acc = r.Stages[BOOSTER].Force / r.Stages[BOOSTER].mass //math.Sqrt(r.Stages[i].ax * r.Stages[i].ax + r.Stages[i].ay * r.Stages[i].ay)
 		}
 
 		// update velocities
-		r.Stages[BOOSTER].RVel = r.Stages[BOOSTER].RVel + (r.Stages[BOOSTER].Force/r.Stages[BOOSTER].Mass)*r.Stages[BOOSTER].dt
-		r.Stages[BOOSTER].AVel = r.Stages[BOOSTER].RVel + vE
+		r.Stages[BOOSTER].rvelocity = r.Stages[BOOSTER].rvelocity + (r.Stages[BOOSTER].Force/r.Stages[BOOSTER].mass)*r.Stages[BOOSTER].dt
+		r.Stages[BOOSTER].avelocity = r.Stages[BOOSTER].rvelocity + vE
 		r.Stages[BOOSTER].vRx = r.Stages[BOOSTER].vRx + r.Stages[BOOSTER].ax*r.Stages[BOOSTER].dt
 		r.Stages[BOOSTER].vAx = r.Stages[BOOSTER].vRx + vE
 
-		r.Stages[BOOSTER].VAbsolute = r.Stages[BOOSTER].AVel
-		r.Stages[BOOSTER].VRelative = r.Stages[BOOSTER].RVel
+		r.Stages[BOOSTER].avelocity = r.Stages[BOOSTER].avelocity
+		r.Stages[BOOSTER].rvelocity = r.Stages[BOOSTER].rvelocity
 
 	}
 	/*
@@ -859,7 +749,7 @@ func (r *VEHICLE) landingTimeStep() { // i = stage
 	if r.Stages[BOOSTER].RunningEngines > 0 {
 		dm = float64(r.Stages[BOOSTER].RunningEngines) * r.Stages[BOOSTER].ThrottleRate * EnginesMap[r.Stages[BOOSTER].EngineID].Flow_rate * r.Stages[BOOSTER].dt
 		r.Stages[BOOSTER].Mf = r.Stages[BOOSTER].Mf - dm
-		r.Stages[BOOSTER].Mass = r.Stages[BOOSTER].Mass - dm
+		r.Stages[BOOSTER].mass = r.Stages[BOOSTER].mass - dm
 	}
 
 	//	fmt.Println("gamma = ", rad2deg(r.Stages[i].gamma))

@@ -10,7 +10,7 @@ func (v *VEHICLE) output_telemetry(event string, f2 *os.File, i int32) { // i = 
 
 	temp_s0 := v.Stages[i].px - (vE * v.Stages[i].Clock)
 	temp_S := v.Stages[i].DTF - Re
-	temp_V := v.Stages[i].VRelative
+	temp_V := v.Stages[i].rvelocity
 	dist := "m"
 	vel := "m/s"
 
@@ -28,7 +28,7 @@ func (v *VEHICLE) output_telemetry(event string, f2 *os.File, i int32) { // i = 
 			(v.Stages[i].DTF-Re)*1e-3,
 			temp_V,
 			v.Stages[i].Acc/g0,
-			v.Stages[i].Mass,
+			v.Stages[i].mass,
 			event)
 	}
 
@@ -48,8 +48,8 @@ func (v *VEHICLE) output_file(i int32, f *os.File) {
 		v.Stages[i].px*1e-3,
 		(v.Stages[i].py-Re)*1e-3,
 		(v.Stages[i].DTF-Re)*1e-3,
-		v.Stages[i].VRelative,
+		v.Stages[i].rvelocity,
 		v.Stages[i].Acc/g0,
-		v.Stages[i].Mass,
+		v.Stages[i].mass,
 		v.Stages[i].ThrottleRate)
 }

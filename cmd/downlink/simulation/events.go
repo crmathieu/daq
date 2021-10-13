@@ -31,7 +31,8 @@ func (v *VEHICLE) hadEvent(eventid uint32) bool {
 //	*x = 1;
 //}
 func (r *VEHICLE) pitchStart(event *Pevent) bool {
-	r.Stages[BOOSTER].gamma = (M_PI / 2) //- deg2rad(event.Gamma0) // 0.025
+	//	r.Stages[BOOSTER].gamma = (M_PI / 2) //- deg2rad(event.Gamma0) // 0.025
+	//r.Stages[BOOSTER].gamma = (M_PI / 2) - 0.025
 	asc.aPhases[0].startingTime = r.Stages[BOOSTER].Clock
 	r.EventsMap = r.EventsMap | data.E_STARTPITCH
 	r.LastEvent = data.E_STARTPITCH
@@ -62,10 +63,10 @@ func (r *VEHICLE) sync_stages() {
 	r.Stages[STAGE2].altitude = r.Stages[BOOSTER].altitude
 	r.Stages[STAGE2].drange = r.Stages[BOOSTER].drange
 
-	r.Stages[STAGE2].RVel = r.Stages[BOOSTER].RVel
-	r.Stages[STAGE2].AVel = r.Stages[BOOSTER].AVel
-	r.Stages[STAGE2].VRelative = r.Stages[BOOSTER].VRelative
-	r.Stages[STAGE2].VAbsolute = r.Stages[BOOSTER].VAbsolute
+	//	r.Stages[STAGE2].RVel = r.Stages[BOOSTER].RVel
+	//	r.Stages[STAGE2].avelocity = r.Stages[BOOSTER].avelocity
+	r.Stages[STAGE2].rvelocity = r.Stages[BOOSTER].rvelocity
+	r.Stages[STAGE2].avelocity = r.Stages[BOOSTER].avelocity
 
 	r.Stages[STAGE2].px = r.Stages[BOOSTER].px
 	r.Stages[STAGE2].py = r.Stages[BOOSTER].py
@@ -91,7 +92,7 @@ func (r *VEHICLE) sync_stages() {
 	r.Stages[STAGE2].gamma = r.Stages[BOOSTER].gamma
 
 	// suddenly the booster is a lot lighter
-	r.Stages[BOOSTER].Mass = r.Stages[BOOSTER].Mass - r.Stages[STAGE2].Mass
+	r.Stages[BOOSTER].mass = r.Stages[BOOSTER].mass - r.Stages[STAGE2].mass
 }
 
 func (r *VEHICLE) stage_sep() {
@@ -164,12 +165,13 @@ func (r *VEHICLE) execute(event Pevent) {
 	case "MECO":
 		r.SysGuidance._MECO1 = r.MSECO(BOOSTER, data.E_MECO_1)
 		mecoAltitude = r.Stages[BOOSTER].altitude
+		r.SysGuidance._MEI1 = false
 
 		fmt.Println("Booster main engines Cut-off:",
 			"\nTime ...................", r.Stages[BOOSTER].Clock, "s",
 			"\nRemaining fuel .........", r.Stages[BOOSTER].Mf, "kg",
 			"\nAltitude ...............", r.Stages[BOOSTER].altitude, "m",
-			"\nVelocity ...............", r.Stages[BOOSTER].AVel*3.6, "km/h",
+			"\nVelocity ...............", r.Stages[BOOSTER].avelocity*3.6, "km/h",
 			"\nFlightPath .............", rad2deg(r.Stages[BOOSTER].gamma), "deg",
 			"\nAngular range ..........", rad2deg(r.Stages[BOOSTER].beta), "deg")
 
@@ -187,6 +189,9 @@ func (r *VEHICLE) execute(event Pevent) {
 	case "SEI":
 		//		r.SysGuidance._SEI1 = r.Ignition(STAGE2, data.E_SEI_1, 1.0, 1)
 		r.SysGuidance._SEI1 = r.Ignition(&event, 1)
+		// update start altitude for TwoPhaseTangentSteering only
+		//$$$$$$$$$$$$$ asc.aPhases[1].startingAltitude = r.Stages[STAGE2].altitude
+
 		//output_telemetry(event, nil, 1)
 		//fmt.Println("\t", r.Stages[STAGE2].Clock, "Second Stage Ignition .....")
 		break
@@ -224,18 +229,19 @@ func (r *VEHICLE) execute(event Pevent) {
 	case "SECO":
 		if !r.hadEvent(data.E_SECO_1) {
 			r.SysGuidance._SECO1 = r.MSECO(STAGE2, data.E_SECO_1)
+			r.SysGuidance._SEI1 = false
 			fmt.Println("\nSecond Stage engine Cut-off:",
 				"\nTime ...................", r.Stages[STAGE2].Clock, "s",
 				"\nRemaining fuel .........", r.Stages[STAGE2].Mf, "kg",
 				"\nAltitude ...............", r.Stages[STAGE2].altitude, "m",
-				"\nVelocity ...............", r.Stages[STAGE2].AVel*3.6, "km/h",
+				"\nVelocity ...............", r.Stages[STAGE2].avelocity*3.6, "km/h",
 				"\nTarget Velocity ........", math.Sqrt(G*Me/(profile.OrbitInsertion+Re))*3.6, "km/h",
 				"\nFlightPath .............", rad2deg(r.Stages[STAGE2].gamma), "deg",
 				"\nAngular range ..........", rad2deg(r.Stages[STAGE2].beta), "deg")
 
 			// NEW NEW
-			apogee = r.Stages[STAGE2].DTF
-			perigee = r.Stages[STAGE2].DTF
+			//apogee = r.Stages[STAGE2].DTF
+			//perigee = r.Stages[STAGE2].DTF
 
 			//output_telemetry(event, f, 1);
 			//fmt.Println("\t", r.Stages[STAGE2].Clock, "Second stage engine cut off .....")

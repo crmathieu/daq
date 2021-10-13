@@ -1,5 +1,5 @@
-
 package main
+
 import (
 	"math"
 )
@@ -11,8 +11,8 @@ import (
 
 //func (r *VEHICLE) throttle_test(hy, ux, uy, mf, throttle float64) float64 {
 func (r *VEHICLE) throttle_test(throttle float64) float64 {
-// r.Stages[BOOSTER].DTF, r.Stages[BOOSTER].vRx, r.Stages[BOOSTER].vRy, r.Stages[BOOSTER].Mf
-//	hy                                ux                    uy                       mf
+	// r.Stages[BOOSTER].DTF, r.Stages[BOOSTER].vRx, r.Stages[BOOSTER].vRy, r.Stages[BOOSTER].Mf
+	//	hy                                ux                    uy                       mf
 	var hy, ux, uy, mf float64
 	var VEL, ft, fd, mass float64
 	var fx, fy, ax, ay float64
@@ -23,26 +23,26 @@ func (r *VEHICLE) throttle_test(throttle float64) float64 {
 	mf = r.Stages[BOOSTER].Mf
 	VEL = math.Sqrt(float64(ux*ux + uy*uy))
 
-	ft = throttle * r.GetThrust(hy, 0);
+	ft = throttle * r.GetThrust2(hy, 0)
 
 	//do
-	for ;uy < 0; {
-		mf = mf - throttle * 236 * r.Stages[BOOSTER].dt
+	for uy < 0 {
+		mf = mf - throttle*236*r.Stages[BOOSTER].dt
 		//mf = mf - throttle * EnginesMap[r.Stages[BOOSTER].EngineID].Flow_rate * r.Stages[BOOSTER].dt
-		mass = mf + r.Stages[BOOSTER].Mr;						
+		mass = mf + r.Stages[BOOSTER].Mr
 
-		fd = (0.5) * r.Stages[BOOSTER].Cd * r.Stages[BOOSTER].CSArea * rho(hy - Re) * VEL * VEL
+		fd = (0.5) * r.Stages[BOOSTER].Cd * r.Stages[BOOSTER].CSArea * rho(hy-Re) * VEL * VEL
 
-		r.flip(0);
+		r.flip(0)
 
-		fx = ft * math.Cos(r.Stages[BOOSTER].gamma) + fd * math.Cos(r.Stages[BOOSTER].alpha + M_PI) + mass * g(hy) * math.Cos(r.Stages[BOOSTER].beta + M_PI)
+		fx = ft*math.Cos(r.Stages[BOOSTER].gamma) + fd*math.Cos(r.Stages[BOOSTER].alpha+M_PI) + mass*g(hy)*math.Cos(r.Stages[BOOSTER].beta+M_PI)
 		ax = fx / mass
-		ux = ux + ax * r.Stages[BOOSTER].dt
-	
-		fy = ft * math.Sin(r.Stages[BOOSTER].gamma) + fd * math.Sin(r.Stages[BOOSTER].alpha + M_PI) + mass * g(hy) * math.Sin(r.Stages[BOOSTER].beta + M_PI)
-		hy = hy + uy * r.Stages[BOOSTER].dt
+		ux = ux + ax*r.Stages[BOOSTER].dt
+
+		fy = ft*math.Sin(r.Stages[BOOSTER].gamma) + fd*math.Sin(r.Stages[BOOSTER].alpha+M_PI) + mass*g(hy)*math.Sin(r.Stages[BOOSTER].beta+M_PI)
+		hy = hy + uy*r.Stages[BOOSTER].dt
 		ay = fy / mass
-		uy = uy + ay * r.Stages[BOOSTER].dt
+		uy = uy + ay*r.Stages[BOOSTER].dt
 
 		VEL = math.Sqrt((ux * ux) + (uy * uy))
 	}
@@ -58,29 +58,29 @@ func (r *VEHICLE) throttle_test(throttle float64) float64 {
 //func (r *VEHICLE) get_landing_throttle(H, ux, uy, mf float64) float64 {
 func (r *VEHICLE) get_landing_throttle() float64 {
 
-	var a = float64(0.7) 
+	var a = float64(0.7)
 	var b = float64(1.0)
 	var end_H float64
 
-	if r.throttle_test(b) > 0 {			// Will a full-power burn keep you alive?
-		if r.throttle_test(a) < 0 {			// Yes. Will a minimum-power burn kill you?
+	if r.throttle_test(b) > 0 { // Will a full-power burn keep you alive?
+		if r.throttle_test(a) < 0 { // Yes. Will a minimum-power burn kill you?
 			for {
-				end_H = r.throttle_test((a+b)/2.0)
+				end_H = r.throttle_test((a + b) / 2.0)
 				if math.Abs(end_H) < 0.1 {
-					return (a + b) / 2.0				// Yes. Burn at this throttle from now to do hoverslam.
+					return (a + b) / 2.0 // Yes. Burn at this throttle from now to do hoverslam.
 				}
 				if end_H < 0 {
 					a = (a + b) / 2.0
-				} 
+				}
 				if end_H > 0 {
 					b = (a + b) / 2.0
 				}
 			}
 		} else {
-			return 0.0;						// No. Don't start burn yet. 
+			return 0.0 // No. Don't start burn yet.
 		}
 	} else {
-		return 1.0;						// No. Too late. Crash unavoidable. Should have started earlier
+		return 1.0 // No. Too late. Crash unavoidable. Should have started earlier
 	}
 
 }
@@ -89,4 +89,3 @@ func (r *VEHICLE) get_landing_throttle() float64 {
 func (r *VEHICLE) update_landing_throttle() {
 	r.Stages[BOOSTER].ThrottleRate = r.get_landing_throttle()
 }
-

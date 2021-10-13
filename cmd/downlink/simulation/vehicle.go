@@ -44,11 +44,12 @@ var profile Profile
 var M_PI = math.Pi
 
 const (
-	G    = 6.67384e-11 // Gravitational Const
-	Me   = 5.97219e24  // Mass of Earth
-	Re   = 6378137     // Radius of Earth
-	g0   = 9.807       //9.7976		// Gravity acceleration on surface
-	tinc = 0.01        // time increment
+	G  = 6.67384e-11 // Gravitational Const
+	Me = 5.97219e24  // Mass of Earth
+	Re = 6378137     // Radius of Earth
+	g0 = 9.807       //9.7976		// Gravity acceleration on surface
+	//tinc = 0.01        // time increment
+	tinc = 1
 )
 
 type VEHICLE struct {
@@ -102,17 +103,27 @@ type RocketStage struct {
 	beta  float64 // beta = angle with gravity
 	gamma float64 // gamma = angle of thrust
 	zeta  float64 // zeta = launch azimuth angle
+	roll  float64 // roll angle. Should align with azimuth
+	pitch float64 // pitch angle,
+
+	// euler update variables
+	t_force, t_drag, t_density, t_rvelocity, t_avelocity, t_drange, t_altitude float64 // variables used for euler steps
+	t_mass, t_Mf, t_atmoPressure, t_temp                                       float64
 
 	// velocity
-	VRelative float64 // Relative Velocity
-	VAbsolute float64 // absolute velocity
+	//VRelative float64 // Relative Velocity
+	//VAbsolute float64 // absolute velocity
 
-	// Mass
-	Mass float64
+	// dynamics
+	mass, rvelocity, avelocity float64
+
+	// aerodynamics
+	drag, lift, temp, density, atmoPressure, aeroPressure float64
 
 	// polar variables
-	Acc, Force, RVel, AVel float64
-	altitude, drange       float64
+	Acc, Force       float64
+	altitude, drange float64
+	//RVel, AVel float64
 
 	// Distance to focus (earth center)
 	DTF float64
@@ -272,6 +283,7 @@ func (r *VEHICLE) InitGuidance(launchProfile string) *[]Pevent {
 	vE = profile.EarthRotation * math.Sin(deg2rad(profile.LaunchAzimuth))
 	fmt.Println("@ latitude L=", profile.LaunchLatitude, "and azimuth A=", profile.LaunchAzimuth, ", Earth rotation velocity boost is", vE, "m/s")
 
+	fmt.Println("PAYLOAD:", profile.PayloadMass)
 	p1, _ := GetEventData(&profile, "PITCH")
 	profile.PitchTime = p1.T
 	p2, _ := GetEventData(&profile, "MECO")
@@ -285,12 +297,28 @@ func (r *VEHICLE) InitGuidance(launchProfile string) *[]Pevent {
 
 	r.Stages[BOOSTER].py = 0 //Re
 	r.Stages[BOOSTER].DTF = Re
-	r.Stages[BOOSTER].AVel = vE
-	r.Stages[BOOSTER].RVel = 0
+	r.Stages[BOOSTER].avelocity = vE
+	r.Stages[BOOSTER].rvelocity = 0
 
-	r.Stages[STAGE2].Mass = r.Stages[STAGE2].Mr + r.Stages[STAGE2].Mf + r.Stages[STAGE2].Mp
-	r.Stages[BOOSTER].Mass = r.Stages[BOOSTER].Mr + r.Stages[BOOSTER].Mf + r.Stages[STAGE2].Mass
+	r.Stages[STAGE2].Mp = profile.PayloadMass
+	r.Stages[STAGE2].mass = r.Stages[STAGE2].Mr + r.Stages[STAGE2].Mf + r.Stages[STAGE2].Mp
+	r.Stages[BOOSTER].mass = r.Stages[BOOSTER].Mr + r.Stages[BOOSTER].Mf + r.Stages[STAGE2].mass
 	return &profile.Events
+}
+
+// Roll program ---------------------------------------------------------------
+//
+// Rockets roll for a few reasons, and like all rocket science and engineering,
+// there’s actually some good reasons. But as for why, it’s generally easier to
+// roll to align the vehicle to its azimuth than it is to move the launch pad,
+// it makes for easier calculations for the guidance computer, rockets roll for
+// aerodynamic and structural considerations, they roll for the astronauts
+// vantage point and visual references, they roll for fairing deployment
+// orientation, they roll to align auxiliary or control thrusters, and they
+// roll for the best line of site for the communications and downlinks.
+// ----------------------------------------------------------------------------
+func RollProgram() {
+
 }
 
 // InitAscentPhases -----------------------------------------------------------
@@ -334,8 +362,9 @@ func InitAscentPhases(injectionAngle float64) bool {
 			//				42, //45, //45, //50,
 			//			},
 		},
-	}*/
+	} */
 	asc = AscentSet{
+		0,
 		0,
 		0,
 		GAMMA0,
@@ -346,7 +375,7 @@ func InitAscentPhases(injectionAngle float64) bool {
 				profile.MecoTime,  //155.0, // MECO
 				-1,
 				-1, //10000.0,
-				50, //65, // between
+				5,  //50, // between
 			},
 			{
 				// second phase, we use altitude
@@ -355,7 +384,43 @@ func InitAscentPhases(injectionAngle float64) bool {
 				-1, // starting altitude set dynamically at the end of first phase
 				profile.OrbitInsertion, // ending altitude
 				//				50000.0,
-				40, //25, // then continue to orbit // 25,
+				85, //40, //25, // then continue to orbit // 25,
+			},
+			//			{
+			//				50000.001,
+			//				profile.OrbitInsertion,
+			//				42, //45, //45, //50,
+			//			},
+		}, /*
+			[]AscentPhaseAltitudeOnly{
+				{
+					0,      //2500.0,
+					8000.0, //10000.0,
+					24,     // 66 degrees when reaching 8000m
+				},
+				{
+					8000.001, //10000.001,
+					20000.0,
+					26, // 40 degrees when reaching 20000m
+				},
+				{
+					20000.001,
+					profile.OrbitInsertion,
+					//				50000.0,
+					40, // then continue to orbit // 25,
+				},
+				//			{
+				//				50000.001,
+				//				profile.OrbitInsertion,
+				//				42, //45, //45, //50,
+				//			},
+			},*/
+		[]AscentPhaseAltitudeOnly{
+			{
+				-1,
+				profile.OrbitInsertion,
+				//				50000.0,
+				90, // then continue to orbit // 25,
 			},
 			//			{
 			//				50000.001,
@@ -366,6 +431,7 @@ func InitAscentPhases(injectionAngle float64) bool {
 	}
 
 	asc.nphases = len(asc.aPhases)
+	asc.nphasesAO = len(asc.aPhasesAO)
 
 	totalDeviation := 0.0
 	for i := 0; i < asc.nphases; i++ {
@@ -435,15 +501,32 @@ func NewVehicle() *VEHICLE {
 				beta:  0.0,
 				zeta:  0.0,
 				gamma: M_PI / 2,
+
+				roll:  0.0,
+				pitch: M_PI / 2,
+
+				// variables used for Euler steps
+				t_force:     0.0,
+				t_drag:      0.0,
+				t_density:   0.0,
+				t_drange:    0.0,
+				t_altitude:  0.0,
+				t_rvelocity: 0.0,
+
+				density:      1.224,
+				aeroPressure: 1013.25, // in millibars
+				atmoPressure: 1013.25,
+				rvelocity:    0.0,
+				drange:       0.0,
 			},
 			// stage2
 			{Clock: -10.0,
 				dt:             tinc, //0.001,
 				Cd:             0.3,
 				CSArea:         10.52,
-				Mr:             4000,                //4900,
-				Mf:             107500,              //75700,
-				Mp:             profile.PayloadMass, //13620,  // typical starlink payload
+				Mr:             4000,   //4900,
+				Mf:             107500, //75700,
+				Mp:             -1,     // in profile profile.PayloadMass, //13620,  // typical starlink payload
 				RunningEngines: 0,
 				EngineID:       "M1DvB5",
 				ThrottleRate:   1.0,
@@ -465,6 +548,23 @@ func NewVehicle() *VEHICLE {
 				beta:  0.0,
 				zeta:  0.0,
 				gamma: M_PI / 2,
+
+				roll:  0.0,
+				pitch: M_PI / 2,
+
+				// variables used for Euler steps
+				t_force:     0.0,
+				t_drag:      0.0,
+				t_density:   0.0,
+				t_drange:    0.0,
+				t_altitude:  0.0,
+				t_rvelocity: 0.0,
+
+				density:      0.0,
+				aeroPressure: 0.0, // in millibars
+				atmoPressure: 0.0,
+				rvelocity:    0.0,
+				drange:       0.0,
 			}},
 	}
 }

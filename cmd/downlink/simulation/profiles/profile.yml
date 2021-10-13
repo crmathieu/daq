@@ -15,9 +15,14 @@ orbitinclination: 28.3922 #97.89 # polar
 injectionangle: 0
 payloadmass: 13620 #3050 # SAOCOM 1B
 
+# mission profile
+missionprofile: DIRECT
+
 #orbitinclination: 51.6 # ISS incl
-orbitinsertion: 500000
-burnout: 535 #552
+orbitinsertion: 390000
+burnout: 552
+
+
 
 # cos(inclination) = cos(lat) * sin(azimuth) 
 # from a given latitude, if we want to launch a payload to a particular orbit inclination, 
@@ -32,17 +37,17 @@ events:
   time: 0.0
   stage: 0
 - id: PITCH
-  time: 35.0 #15.0
+  time: 15.0 #35.0 #15.0
   stage: 0
   gamma0: 2  # in degree
 - id: THROTTLE_DWN
   time: 65.0
   stage: 0
-  rate: 0.75
+  rate: 0.85
 - id: THROTTLE_UP
   time: 73.0
   stage: 0
-  rate: 0.98
+  rate: 0.97
 - id: MECO
   time: 155.0
   stage: 0
@@ -52,7 +57,7 @@ events:
 - id: SEI
   time: 165.0
   stage: 1
-  rate: 1.0
+  rate: 0.9
 #- id: ENTRY_BURN_ON     # main engine entry burn ignition #MEI-2
 #  time: 515.0
 #  stage: 0
@@ -65,5 +70,5 @@ events:
 #  stage: 0
 #  rate: 0.9
 - id: SECO
-  time: 655 #535.0
+  time: 610 #535.0
   stage: 1

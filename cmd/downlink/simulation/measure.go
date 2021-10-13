@@ -34,7 +34,7 @@ func (v *VEHICLE) readThrust(stage int32) [data.DATAPOINT_SIZE]byte { //interfac
 func (v *VEHICLE) readVelocity(stage int32) [data.DATAPOINT_SIZE]byte { //interface{}  {
 	p := (*data.SENSvelocity)(v.Instruments[data.SVELOCITY_OFFSET])
 	p.Id = Mux(stage, p.Id)
-	p.Velocity = float32((v.Stages[stage].VRelative) * 1e-3)
+	p.Velocity = float32((v.Stages[stage].rvelocity) * 1e-3)
 	p.Acceleration = float32(v.Stages[stage].Acc / g0)
 	//p.Stage = uint32(stage)
 	return *(*[data.DATAPOINT_SIZE]byte)(unsafe.Pointer(p))
@@ -116,7 +116,7 @@ func (v *VEHICLE) ReadInstruments(pOut []byte, capacity, index int, stage int) (
 }
 
 // StreamData -----------------------------------------------------------------
-// Instruments reading and streaming infinite loop. Paused every 10 millisec
+// Instruments reading and streaming infinite loop. Active every 10 millisec
 // ----------------------------------------------------------------------------
 func (v *VEHICLE) StreamData(c net.Conn) {
 

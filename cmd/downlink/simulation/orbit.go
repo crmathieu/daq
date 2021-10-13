@@ -115,12 +115,18 @@ func (v *VEHICLE) addStep() {
 		// engine still supposed to be running
 		//		if v.NoFuel(STAGE2) || (v.Stages[STAGE2].VAbsolute >= math.Sqrt(G*Me/(profile.OrbitInsertion+Re))) { //||
 		//fmt.Println("VEL=", v.Stages[STAGE2].AVel*3.6, ", TGT=", TargetOrbitalVelocity*3.6)
-		if v.NoFuel(STAGE2) || (v.Stages[STAGE2].AVel >= TargetOrbitalVelocity) { //||
-			fmt.Println("We have premature SECO !!!",
-				"\nTime ..................", v.Stages[STAGE2].Clock, "s",
+		if v.NoFuel(STAGE2) || (v.Stages[STAGE2].avelocity >= TargetOrbitalVelocity) { //||
+			fmt.Print("\n!!! We have premature SECO due to ")
+			if v.NoFuel(STAGE2) {
+				fmt.Println("No more fuel...")
+			} else {
+				fmt.Println("Target orbit velocity reached...")
+			}
+			fmt.Println(
+				"Time ..................", v.Stages[STAGE2].Clock, "s",
 				"\nRemaining fuel ........", v.Stages[STAGE2].Mf, "kg",
 				"\nAltitude ..............", (v.Stages[STAGE2].altitude)*1e-3, "km",
-				"\nVelocity ..............", v.Stages[STAGE2].AVel*3.6, "km/h",
+				"\nVelocity ..............", v.Stages[STAGE2].avelocity*3.6, "km/h",
 				"\nTarget Velocity .......", TargetOrbitalVelocity*3.6, "km/h",
 				"\nFlight Path ...........", rad2deg(v.Stages[STAGE2].gamma), "deg",
 				"\nAngular range .........", rad2deg(v.Stages[STAGE2].beta), "deg")
