@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/rs/cors"
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 	"net/http"
 	"fmt"
 	"os"

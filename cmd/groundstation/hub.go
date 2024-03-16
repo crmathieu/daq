@@ -1,6 +1,6 @@
 package main
 import (
-	"github.com/crmathieu/daq/packages/streamer"
+	"daq/packages/streamer"
 	"github.com/gorilla/websocket"
 	"time"
 	"sync"

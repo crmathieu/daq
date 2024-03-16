@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 )
 
 var events *[]Pevent
@@ -93,7 +93,7 @@ func (v *VEHICLE) showOrbitDetails() {
 		"km",
 		(apogee-Re)*1e-3,
 		"km")
-	fmt.Println("MaxQ =", mQ.MaxQ, "at time", mQ.Time, ", altitude:", mQ.Alt, ",\nrange:", mQ.Range, "at speed = ", mQ.Velocity, "m/s", "\nangle=", mQ.Angle, ", density:", mQ.RhoMQ)
+//	fmt.Println("MaxQ =", mQ.MaxQ, "at time", mQ.Time, ", altitude:", mQ.Alt, ",\nrange:", mQ.Range, "at speed = ", mQ.Velocity, "m/s", "\nangle=", mQ.Angle, ", density:", mQ.RhoMQ)
 
 	// eccentricity is given with A = a(1+e) and P = a(1-e), hence A/P = (1+e)/(1-e) and
 	// finally e = (A-P)/(A+P)

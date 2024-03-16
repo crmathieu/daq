@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 )
 
 // there is only one angle to consider: gamma. This is the angle between the velocity vector and
@@ -423,7 +423,9 @@ func (r *VEHICLE) GravityTurnWithTangentSteering(i int32) float64 {
 				dgamma := 0.0
 				if r.Stages[i].Clock > profile.PitchTime && r.Stages[i].Clock <= profile.PitchTime+2 {
 					// initial pitch program
-					dgamma = 0.004 * r.Stages[i].gamma * tinc
+					dgamma = 0.014 * r.Stages[i].gamma * tinc
+					dgamma = 0.010 * r.Stages[i].gamma * tinc
+//					dgamma = 0.004 * r.Stages[i].gamma * tinc
 					//dgamma = 0.5 * r.Stages[i].dt / 500
 					//				asc.deviationLeft -= dgamma
 				} else {

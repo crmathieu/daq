@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 	"github.com/go-redis/redis"
 	"html/template"	
 	"net/http"

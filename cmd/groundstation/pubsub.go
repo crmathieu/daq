@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-redis/redis"
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 	"os"
 	"time"
 	"strings"

@@ -2,7 +2,7 @@
 package streamer
 
 import (
-	"github.com/crmathieu/daq/packages/data"	
+	"daq/packages/data"	
 	"io"
 	"sync"
 )

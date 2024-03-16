@@ -1,3 +1,12 @@
+# install
+cd daq
+go mod init daq
+go get github.com/gorilla/websocket
+go get github.com/go-redis/redis
+go get github.com/rs/cors
+go get gopkg.in/yaml.v2
+
+
 # DAQ
 Daq provides a possible solution to package and transmit data from a vehicle to a fixed station. The station captures the data and passed it along to client applications for consumption. Clients connect to the ground station using an _authentication token_ to start receiving the stream of data.
 

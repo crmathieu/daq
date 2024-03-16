@@ -3,7 +3,7 @@ package main
 import (
 	"unsafe"
 
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 	//	"fmt"
 	"net"
 	//	"context"

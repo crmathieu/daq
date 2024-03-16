@@ -1,7 +1,7 @@
 package main
 import (
 	"fmt"
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 	"net/url"
 	"github.com/gorilla/websocket"
 	"unsafe"

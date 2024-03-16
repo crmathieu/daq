@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 )
 
 func GetEventData(P *Profile, Id string) (*Pevent, int) {
@@ -126,6 +126,17 @@ func (r *VEHICLE) MSECO(stage int32, eventid uint32) bool {
 	return true
 }
 
+func (r *VEHICLE) ShowMaxQ() {
+	fmt.Println("\nMAXQ Stats -------------")
+	fmt.Println("MaxQ ................... ", mQ.MaxQ, "Pa", 
+				"\nTime ................... ", mQ.Time, "sec",
+				"\nAltitude ............... ", mQ.Alt,  "m",
+				"\nRange .................. ", mQ.Range, "m",
+				"\nVehicle speed .......... ", mQ.Velocity, "m/s", 
+				"\nPitch Angle ............ ", mQ.Angle, "deg",
+				"\nDensity ................ ", mQ.RhoMQ)
+
+}
 //func (r *VEHICLE) execute(event string, f *os.File) {
 func (r *VEHICLE) execute(event Pevent) {
 	//fmt.Println(event)
@@ -174,6 +185,8 @@ func (r *VEHICLE) execute(event Pevent) {
 			"\nVelocity ...............", r.Stages[BOOSTER].avelocity*3.6, "km/h",
 			"\nFlightPath .............", rad2deg(r.Stages[BOOSTER].gamma), "deg",
 			"\nAngular range ..........", rad2deg(r.Stages[BOOSTER].beta), "deg")
+
+		r.ShowMaxQ()
 
 		//output_telemetry(event, f, 1)
 		//r.sync_stages()

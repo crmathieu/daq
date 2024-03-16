@@ -6,7 +6,7 @@ import (
 	//"os"
 	"time"
 
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 )
 
 var touchdown = false

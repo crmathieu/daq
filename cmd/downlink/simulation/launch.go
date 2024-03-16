@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/crmathieu/daq/packages/data"
+	"daq/packages/data"
 )
 
 func deg2rad(degree float64) float64 {
@@ -19,9 +19,9 @@ func rad2deg(rad float64) float64 {
 const REALTIME_SIM = true
 const CALCULATED_SIM = false
 
-//var simulation = CALCULATED_SIM
+var simulation = CALCULATED_SIM
 
-var simulation = REALTIME_SIM
+//ar simulation = REALTIME_SIM
 
 func main() {
 
