@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"math"
 
-	"daq/packages/data"
+	//"daq/packages/data"
+	"github.com/crmathieu/daq/packages/data"	
 )
 
 func GetEventData(P *Profile, Id string) (*Pevent, int) {

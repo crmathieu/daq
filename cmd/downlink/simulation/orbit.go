@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"daq/packages/data"
+	"github.com/crmathieu/daq/packages/data"
 )
 
 var events *[]Pevent
@@ -58,8 +58,10 @@ func (v *VEHICLE) launch(realTime bool) {
 
 	var ticker *time.Ticker
 	//var elasped = 0.0
+
+	var stepFrequency = 1000 // in milliseconds
 	if realTime {
-		ticker = time.NewTicker(10 * time.Millisecond)
+		ticker = time.NewTicker( time.Duration(stepFrequency) * time.Millisecond)
 		for !orbit && !crashed {
 			select {
 			case <-ticker.C:

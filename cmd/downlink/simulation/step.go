@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"daq/packages/data"
+	"github.com/crmathieu/daq/packages/data"
 )
 
 // there is only one angle to consider: gamma. This is the angle between the velocity vector and

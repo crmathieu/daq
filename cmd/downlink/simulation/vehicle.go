@@ -7,7 +7,7 @@ import (
 	"os"
 	"unsafe"
 
-	"daq/packages/data"
+	"github.com/crmathieu/daq/packages/data"
 	"gopkg.in/yaml.v2"
 )
 

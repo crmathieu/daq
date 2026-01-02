@@ -3,8 +3,8 @@ package main
 import (
 	"io" 
 	"net"
-	"daq/packages/streamer"
-	"daq/packages/data"
+	"github.com/crmathieu/daq/packages/streamer"
+	"github.com/crmathieu/daq/packages/data"
 	"time"
 	"fmt"
 	"unsafe"
